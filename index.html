@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emora · Scan Me</title>
+<meta name="description" content="Demo: a plush toy for pediatrician offices. Parents scan the QR on its belly to text Emora in two taps.">
+<style>
+  :root { --bg:#fbf4ec; --ink:#2b2320; --muted:#7a6a62; --accent:#e0795a; }
+  * { box-sizing:border-box; margin:0; }
+  html,body { height:100%; }
+  body { background:radial-gradient(120% 90% at 50% 40%, #fff9f2 0%, var(--bg) 55%, #f2e4d6 100%);
+         color:var(--ink); font:16px/1.4 ui-rounded, "SF Pro Rounded", system-ui, -apple-system, sans-serif;
+         overflow:hidden; }
+  #stage { position:fixed; inset:0; }
+  header { position:fixed; top:20px; left:0; right:0; text-align:center; pointer-events:none; padding:0 16px; }
+  .tag { display:inline-block; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted);
+         border:1px solid #e6d6c8; border-radius:99px; padding:4px 10px; background:#fffaf5aa; }
+  h1 { font-size:clamp(22px,4vw,34px); margin-top:10px; font-weight:700; }
+  footer { position:fixed; bottom:18px; left:0; right:0; text-align:center; color:var(--muted); font-size:14px; padding:0 16px; pointer-events:none; }
+  footer b { color:var(--accent); }
+  #looks { margin-top:12px; display:inline-flex; gap:4px; padding:4px; border-radius:99px; background:#fffaf5cc;
+           border:1px solid #e6d6c8; pointer-events:auto; }
+  #looks button { font:inherit; font-size:14px; border:0; background:none; padding:6px 14px; border-radius:99px; cursor:pointer; color:var(--ink); }
+  #looks button[aria-pressed="true"] { background:var(--accent); color:#fff; }
+  #care { position:fixed; bottom:50px; left:50%; transform:translateX(-50%); display:flex; gap:10px; z-index:2; }
+  #care button { font:inherit; border:1px solid #e6d6c8; background:#fffaf5e6; border-radius:18px; padding:8px 12px 10px;
+                 min-width:72px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px;
+                 box-shadow:0 4px 14px #b4876a22; transition:transform .15s; color:var(--ink); }
+  #care button:hover:not(:disabled) { transform:translateY(-3px) rotate(-2deg); }
+  #care button:active:not(:disabled) { transform:scale(.94); }
+  #care button:disabled { opacity:.55; cursor:default; }
+  #care .ic { font-size:24px; line-height:1; }
+  #care .lb { font-size:12px; font-weight:600; }
+  #care .meter { width:48px; height:6px; border-radius:6px; background:#efe2d6; overflow:hidden; margin-top:3px; }
+  #care .meter i { display:block; height:100%; width:var(--v,50%); background:#8cc084; border-radius:6px; transition:width .6s; }
+  #care .meter.low i { background:var(--accent); animation:blink 1s infinite; }
+  @keyframes blink { 50% { opacity:.4 } }
+  #fx { position:fixed; inset:0; pointer-events:none; z-index:3; }
+  .fx { position:absolute; font-size:26px; transform:translate(-50%,-50%); animation:float 2s ease-out forwards; opacity:0; }
+  @keyframes float { 0% { opacity:0; transform:translate(-50%,-50%) scale(.4) }
+                     15% { opacity:1; transform:translate(-50%,-70%) scale(1.15) }
+                     100% { opacity:0; transform:translate(calc(-50% + var(--dx)), -260%) scale(.9) } }
+  @media (max-width:480px) { #care { gap:6px; bottom:64px } #care button { min-width:62px; padding:6px 8px 8px } }
+  #caption { margin-top:8px; font-weight:700; color:var(--accent); font-size:18px; min-height:1em; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<header>
+  <span class="tag">Demo · Pediatrician waiting room</span>
+  <h1>Scan my tummy to find your child a therapist</h1>
+  <nav id="looks" hidden></nav>
+  <div id="caption"></div>
+</header>
+<div id="fx"></div>
+<nav id="care" aria-label="Care for the bear"></nav>
+<footer>Scan → text sends → Emora knows who referred you. <b>Two taps.</b></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const PRACTICE = 'demo-peds-01';
+const SCAN_URL = location.origin.startsWith('http') ? `${location.origin}/scan?p=${PRACTICE}` : `https://emora.lol/scan?p=${PRACTICE}`;
+
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+
+// Lights
+scene.add(new THREE.HemisphereLight(0xfff3e6, 0xc9a58a, 1.1));
+const key = new THREE.DirectionalLight(0xffffff, 2.2);
+key.position.set(3, 5, 5); key.castShadow = true;
+key.shadow.mapSize.set(1024,1024); key.shadow.radius = 6;
+Object.assign(key.shadow.camera, { left:-3, right:3, top:3, bottom:-3 });
+scene.add(key);
+const rim = new THREE.DirectionalLight(0xffd9c2, 1.2); rim.position.set(-4, 2, -3); scene.add(rim);
+
+// Fuzzy fabric texture (noise) for bump + subtle color variation
+function fuzzTexture(base) {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d'); g.fillStyle = base; g.fillRect(0,0,256,256);
+  for (let i=0;i<9000;i++){ const v=Math.random()*40-20;
+    g.fillStyle=`rgba(${v>0?255:0},${v>0?255:0},${v>0?255:0},${Math.abs(v)/160})`;
+    g.fillRect(Math.random()*256, Math.random()*256, 1+Math.random()*1.5, 1+Math.random()*3); }
+  const t = new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(3,3);
+  t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const plush = (hex, base) => {
+  const map = fuzzTexture(base);
+  return new THREE.MeshPhysicalMaterial({ color:hex, map, bumpMap:map, bumpScale:0.6, roughness:1,
+    sheen:1, sheenRoughness:0.6, sheenColor:new THREE.Color(0xfff1e4) });
+};
+const furMat   = plush(0xe8a07a, '#ffffff');
+const lightMat = plush(0xfbe2cc, '#ffffff');
+const darkMat  = new THREE.MeshStandardMaterial({ color:0x2a1d18, roughness:0.25, metalness:0.1 });
+const pinkMat  = plush(0xf3a3a0, '#ffffff');
+
+const sphere = (r, mat, sx=1, sy=1, sz=1) => {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 64, 48), mat);
+  m.scale.set(sx, sy, sz); m.castShadow = true; m.receiveShadow = true; return m;
+};
+
+// Bear rig
+const bear = new THREE.Group(); scene.add(bear);
+const bodyPivot = new THREE.Group(); bear.add(bodyPivot);
+
+const BODY_R = 1, BODY_S = [1.0, 1.08, 0.82];
+const body = sphere(BODY_R, furMat, ...BODY_S); body.position.y = 0; bodyPivot.add(body);
+
+// Legs
+for (const s of [-1, 1]) {
+  const leg = sphere(0.42, furMat, 1, 0.85, 1.25); leg.position.set(0.52*s, -0.82, 0.38); bodyPivot.add(leg);
+  const pad = sphere(0.26, lightMat, 1, 1, 0.35); pad.position.set(0.52*s, -0.84, 0.86); bodyPivot.add(pad);
+}
+// Arms (pivot at shoulder so they can wave)
+const arms = [];
+for (const s of [-1, 1]) {
+  const shoulder = new THREE.Group(); shoulder.position.set(0.82*s, 0.42, 0.12); bodyPivot.add(shoulder);
+  const arm = sphere(0.27, furMat, 0.9, 1.7, 0.9); arm.position.set(0.12*s, -0.38, 0.1); arm.rotation.z = 0.35*s;
+  shoulder.add(arm); arms.push({ shoulder, s, arm });
+}
+
+// Head
+const neck = new THREE.Group(); neck.position.y = 0.95; bodyPivot.add(neck);
+const head = sphere(0.78, furMat, 1.08, 0.96, 0.95); head.position.y = 0.62; neck.add(head);
+const snout = sphere(0.32, lightMat, 1.15, 0.85, 0.8); snout.position.set(0, 0.46, 0.68); neck.add(snout);
+const nose = sphere(0.1, darkMat, 1.3, 0.85, 0.8); nose.position.set(0, 0.58, 0.94); neck.add(nose);
+const eyeMat = darkMat.clone();
+const eyelids = [];
+for (const s of [-1,1]) {
+  const eye = sphere(0.085, eyeMat); eye.position.set(0.3*s, 0.8, 0.66); neck.add(eye);
+  const glint = new THREE.Mesh(new THREE.SphereGeometry(0.022,16,16), new THREE.MeshBasicMaterial({color:0xffffff}));
+  glint.position.set(0.3*s+0.03, 0.83, 0.74); neck.add(glint);
+  const cheek = sphere(0.12, pinkMat, 1, 0.6, 0.4); cheek.position.set(0.5*s, 0.52, 0.6); neck.add(cheek);
+  const lid = sphere(0.125, furMat); lid.position.set(0.3*s, 0.81, 0.66); lid.scale.y = 0.001; neck.add(lid); eyelids.push(lid);
+}
+const ears = [];
+for (const s of [-1,1]) {
+  const ear = new THREE.Group(); ear.position.set(0.58*s, 1.2, 0); neck.add(ear);
+  const outer = sphere(0.27, furMat, 1, 1, 0.55); ear.add(outer);
+  const inner = sphere(0.16, pinkMat, 1, 1, 0.4); inner.position.z = 0.1; ear.add(inner);
+  ears.push({ ear, s });
+}
+
+// ---------- Team looks (shown with ?team) ----------
+function canvasTex(w, h, draw, repeat=[1,1]) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...repeat);
+  t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const knitTex = canvasTex(64, 64, (g,w,h) => {
+  g.fillStyle = '#fff'; g.fillRect(0,0,w,h);
+  for (let x=0;x<w;x+=8){ g.fillStyle='rgba(0,0,0,.35)'; g.fillRect(x,0,2,h); }
+  for (let i=0;i<300;i++){ g.fillStyle=`rgba(0,0,0,${Math.random()*.15})`; g.fillRect(Math.random()*w,Math.random()*h,2,3); }
+}, [14, 8]);
+const plaidTex = (bg, line) => canvasTex(64, 64, (g,w,h) => {
+  g.fillStyle = bg; g.fillRect(0,0,w,h); g.fillStyle = line;
+  for (let i=0;i<w;i+=16){ g.fillRect(i,0,2,h); g.fillRect(0,i,w,2); }
+  g.globalAlpha = .4; for (let i=8;i<w;i+=16){ g.fillRect(i,0,1,h); g.fillRect(0,i,w,1); }
+}, [10, 6]);
+const pique = canvasTex(64, 64, (g,w,h) => {
+  g.fillStyle = '#fff'; g.fillRect(0,0,w,h);
+  for (let y=0;y<h;y+=4) for (let x=(y/4)%2*2;x<w;x+=4){ g.fillStyle='rgba(0,0,0,.18)'; g.fillRect(x,y,2,2); }
+}, [16, 10]);
+// Stubble mask: dots only on the lower front of a sphere (u≈0.25 is +z, flipY puts canvas top at the sphere top)
+const stubbleAlpha = (density) => canvasTex(512, 256, (g,w,h) => {
+  g.fillStyle = '#000'; g.fillRect(0,0,w,h);
+  for (let i=0;i<9000*density;i++){
+    const u = 0.25 + (Math.random()-0.5)*0.34, v = 0.52 + Math.random()*0.36;
+    const edge = Math.min(1, (0.17 - Math.abs(u-0.25))*9) * Math.min(1, (v-0.52)*6);
+    g.fillStyle = `rgba(255,255,255,${Math.max(0,edge)*(.5+Math.random()*.5)})`;
+    g.fillRect(u*w, v*h, 1.6, 1.6);
+  }
+});
+
+const LOOKS = {
+  bear:  { label:'Bear' },
+  zach:  { label:'Zach', hair:0xb48a55, style:'quiff', iris:0x6f9cc8, brow:0x8a6a45, stubble:0x8a6a48, stubbleD:0.6,
+           grin:true, top:'sweater', topColor:0x1f2126 },
+  ed:    { label:'Ed', hair:0x2b2019, style:'swept', iris:0x5a3a22, brow:0x2b2019, stubble:0x3b2d24, stubbleD:1,
+           grin:true, top:'shirt', topColor:0xa9cde3, plaid:['#a9cde3', '#5f8fb3'] },
+  robin: { label:'Robin', hair:0x15100e, style:'curls', iris:0x3a2a1c, brow:0x15100e, grin:true, glasses:0x6f8496,
+           top:'polo', topColor:0xd8231c },
+};
+
+const look = new THREE.Group(); neck.add(look);
+const lookBody = new THREE.Group(); bodyPivot.add(lookBody);
+const disposeGroup = g => { while (g.children.length) g.remove(g.children[0]); };
+// point on the head ellipsoid (neck space): az = 0 is the face, el = elevation
+const HEAD_C = new THREE.Vector3(0, 0.62, 0), HEAD_R = new THREE.Vector3(0.84, 0.75, 0.74);
+const headPt = (az, el, k=1) => new THREE.Vector3(
+  HEAD_C.x + HEAD_R.x*k*Math.cos(el)*Math.sin(az), HEAD_C.y + HEAD_R.y*k*Math.sin(el), HEAD_C.z + HEAD_R.z*k*Math.cos(el)*Math.cos(az));
+const UP = new THREE.Vector3(0,1,0);
+function tuft(mat, pos, dir, r, stretch) {
+  const m = sphere(r, mat, 0.85, stretch, 0.85);
+  m.position.copy(pos); m.quaternion.setFromUnitVectors(UP, dir.clone().normalize()); look.add(m); return m;
+}
+
+function applyLook(name) {
+  const L = LOOKS[name] || LOOKS.bear;
+  disposeGroup(look); disposeGroup(lookBody);
+  eyeMat.color.set(0x2a1d18);
+  arms.forEach(a => a.arm.material = furMat);
+  if (name === 'bear' || !LOOKS[name]) return;
+
+  // Hair
+  const hairMat = plush(L.hair, '#ffffff'); hairMat.sheenColor = new THREE.Color(0x777777); hairMat.bumpScale = 1.2;
+  if (L.style !== 'curls') {
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.78, 64, 32, 0, Math.PI*2, 0, L.style === 'quiff' ? 1.05 : 1.15), hairMat);
+    cap.scale.set(1.12, 1.0, 0.99); cap.position.copy(HEAD_C); cap.rotation.x = -0.32; cap.castShadow = true; look.add(cap);
+  }
+  if (L.style === 'quiff') {          // Zach: tousled, swept up and to the side
+    for (let i=0;i<9;i++){
+      const az = -0.75 + i*0.19, el = 0.72 + Math.sin(i*1.7)*0.06;
+      const p = headPt(az, el, 1.02);
+      const dir = new THREE.Vector3(Math.sin(az)*0.5 + 0.35, 1.1, 0.75);
+      tuft(hairMat, p, dir, 0.13 + (i%3)*0.015, 2.1);
+    }
+  } else if (L.style === 'swept') {   // Ed: short, swept back, a stray piece up top
+    for (let i=0;i<8;i++){
+      const az = -0.7 + i*0.2, p = headPt(az, 0.8, 1.0);
+      tuft(hairMat, p, new THREE.Vector3(Math.sin(az)*0.3, 0.6, -1), 0.12, 2.0);
+    }
+    tuft(hairMat, headPt(0.15, 1.15, 1.02), new THREE.Vector3(0.3, 1, 0.2), 0.07, 2.4);
+  } else if (L.style === 'curls') {   // Robin: big curly volume all round
+    const rnd = (i) => (Math.sin(i*12.9898)*43758.5453) % 1;
+    for (let i=0;i<140;i++){
+      const az = -2.6 + Math.abs(rnd(i))*5.2, el = 0.25 + Math.abs(rnd(i+500))*1.3;
+      if (Math.abs(az) < 0.9 && el < 0.62) continue; // keep the face clear
+      const p = headPt(az, el, 1.06 + Math.abs(rnd(i+900))*0.14);
+      const c = sphere(0.1 + Math.abs(rnd(i+70))*0.07, hairMat); c.position.copy(p); look.add(c);
+    }
+    for (const s of [-1,1]) for (let j=0;j<5;j++){ // sides down past the ears
+      const c = sphere(0.12, hairMat); c.position.copy(headPt(s*(1.35+j*0.12), 0.1 - j*0.07, 1.12)); look.add(c);
+    }
+  }
+
+  // Eyes + brows
+  eyeMat.color.set(L.iris);
+  for (const s of [-1,1]) {
+    const pupil = sphere(0.04, darkMat); pupil.position.set(0.3*s, 0.8, 0.735); look.add(pupil);
+    const brow = sphere(0.1, plush(L.brow, '#ffffff'), 1.1, 0.28, 0.4);
+    brow.position.set(0.3*s, 0.96, 0.66); brow.rotation.z = -0.12*s; look.add(brow);
+  }
+
+  // Big grin with teeth
+  if (L.grin) {
+    const lip = new THREE.Mesh(new THREE.CircleGeometry(0.135, 40, Math.PI, Math.PI), new THREE.MeshStandardMaterial({ color:0x7a2d2a, roughness:0.6 }));
+    lip.position.set(0, 0.395, 0.935); lip.rotation.x = 0.38; look.add(lip);
+    const teeth = new THREE.Mesh(new THREE.CircleGeometry(0.12, 40, Math.PI, Math.PI), new THREE.MeshStandardMaterial({ color:0xfffdf6, roughness:0.3 }));
+    teeth.scale.y = 0.55; teeth.position.set(0, 0.392, 0.94); teeth.rotation.x = 0.38; look.add(teeth);
+  }
+
+  // Stubble on snout + jaw
+  if (L.stubble) {
+    const mat = new THREE.MeshStandardMaterial({ color:L.stubble, alphaMap:stubbleAlpha(L.stubbleD), transparent:true, depthWrite:false, roughness:1 });
+    const s1 = new THREE.Mesh(new THREE.SphereGeometry(0.32, 64, 48), mat);
+    s1.scale.set(1.15*1.025, 0.85*1.025, 0.8*1.025); s1.position.copy(snout.position); s1.rotation.y = 0; look.add(s1);
+    const s2 = new THREE.Mesh(new THREE.SphereGeometry(0.78, 64, 48), mat);
+    s2.scale.set(1.08*1.012, 0.96*1.012, 0.95*1.012); s2.position.copy(head.position); look.add(s2);
+  }
+
+  // Glasses (Robin)
+  if (L.glasses) {
+    const frame = new THREE.MeshStandardMaterial({ color:L.glasses, metalness:0.6, roughness:0.3 });
+    const lens = new THREE.MeshPhysicalMaterial({ color:0xffffff, transmission:0.9, transparent:true, opacity:0.25, roughness:0.05 });
+    for (const s of [-1,1]) {
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.016, 10, 4), frame);
+      rim.rotation.z = Math.PI/4; rim.scale.set(1.25, 0.8, 1); rim.position.set(0.3*s, 0.8, 0.8); look.add(rim);
+      const glass = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.18), lens); glass.position.set(0.3*s, 0.8, 0.8); look.add(glass);
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.6), frame);
+      arm.rotation.x = Math.PI/2; arm.position.set(0.52*s, 0.82, 0.5); arm.rotation.y = 0.35*s; look.add(arm);
+    }
+    const bridge = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.16), frame);
+    bridge.rotation.z = Math.PI/2; bridge.position.set(0, 0.84, 0.83); look.add(bridge);
+  }
+
+  // Clothes on the body + sleeves
+  const map = L.top === 'sweater' ? knitTex : L.top === 'shirt' ? plaidTex(...L.plaid) : pique;
+  const cloth = new THREE.MeshStandardMaterial({ color: L.top === 'shirt' ? 0xffffff : L.topColor, map, bumpMap:map, bumpScale:0.4, roughness:0.95 });
+  const top = sphere(BODY_R, cloth, BODY_S[0]*1.03, BODY_S[1]*1.03, BODY_S[2]*1.035); lookBody.add(top);
+  arms.forEach(a => a.arm.material = cloth);
+  if (L.top === 'sweater') {
+    const crew = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.06, 16, 48), cloth);
+    crew.rotation.x = Math.PI/2 - 0.25; crew.position.set(0, 0.96, 0.1); lookBody.add(crew);
+  } else {
+    for (const s of [-1,1]) { // pointed collar wings
+      const shape = new THREE.Shape(); shape.moveTo(0,0); shape.lineTo(0.32*s, 0.04); shape.lineTo(0.06*s, -0.3); shape.lineTo(0,0);
+      const wing = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth:0.03, bevelEnabled:false }), cloth);
+      wing.position.set(0.02*s, 0.98, 0.5); wing.rotation.x = -0.5; wing.castShadow = true; lookBody.add(wing);
+    }
+    if (L.top === 'polo') for (const y of [0.78, 0.64]) {
+      const b = sphere(0.035, new THREE.MeshStandardMaterial({ color:0xf3d9d5 }), 1, 1, 0.4); b.position.set(0, y, 0.74); lookBody.add(b);
+    }
+  }
+}
+
+// QR belly patch: a plane bent to sit on the ellipsoid belly
+const qr = qrcode(0, 'M'); qr.addData(SCAN_URL); qr.make();
+const n = qr.getModuleCount(), quiet = 3, px = 16, size = (n + quiet*2) * px;
+const qc = document.createElement('canvas'); qc.width = qc.height = size;
+const qg = qc.getContext('2d');
+qg.fillStyle = '#fffaf3'; qg.fillRect(0,0,size,size);
+qg.fillStyle = '#2b1f1a';
+for (let r=0;r<n;r++) for (let c=0;c<n;c++) if (qr.isDark(r,c)) qg.fillRect((c+quiet)*px,(r+quiet)*px,px,px);
+const qrTex = new THREE.CanvasTexture(qc); qrTex.colorSpace = THREE.SRGBColorSpace;
+qrTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+qrTex.magFilter = THREE.NearestFilter; qrTex.minFilter = THREE.LinearMipmapLinearFilter;
+
+const PATCH = 0.86, cy = -0.05;
+function bentPlane(w, h, offset) {
+  const geo = new THREE.PlaneGeometry(w, h, 40, 40);
+  const p = geo.attributes.position;
+  const [sx, sy, sz] = BODY_S;
+  for (let i=0;i<p.count;i++){
+    const x = p.getX(i), y = p.getY(i) + cy;
+    const nx = x/(BODY_R*sx), ny = y/(BODY_R*sy);
+    const z = BODY_R*sz*Math.sqrt(Math.max(0, 1 - nx*nx - ny*ny));
+    p.setXYZ(i, x, y, z + offset);
+  }
+  geo.computeVertexNormals(); return geo;
+}
+// felt backing with a stitched border
+const felt = new THREE.Mesh(bentPlane(PATCH+0.14, PATCH+0.14, 0.042), lightMat); felt.receiveShadow = true;
+bodyPivot.add(felt);
+const qrMesh = new THREE.Mesh(bentPlane(PATCH, PATCH, 0.052),
+  new THREE.MeshStandardMaterial({ map:qrTex, roughness:0.9 }));
+bodyPivot.add(qrMesh);
+
+// Look toggle (hidden unless ?team)
+if (new URLSearchParams(location.search).has('team')) {
+  const bar = document.getElementById('looks'); bar.hidden = false;
+  const caption = document.getElementById('caption');
+  const set = name => {
+    applyLook(name);
+    bar.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.look === name));
+    caption.textContent = name === 'bear' ? '' : `${LOOKS[name].label}bear`;
+    requestAnimationFrame(() => { squish = 1; }); // squish is declared further down
+  };
+  for (const [k, v] of Object.entries(LOOKS)) {
+    const b = document.createElement('button'); b.dataset.look = k; b.textContent = v.label;
+    b.onclick = () => set(k); bar.appendChild(b);
+  }
+  set(new URLSearchParams(location.search).get('team') || 'bear');
+}
+
+// Ground shadow
+const ground = new THREE.Mesh(new THREE.CircleGeometry(3, 64), new THREE.ShadowMaterial({ opacity:0.16 }));
+ground.rotation.x = -Math.PI/2; ground.position.y = -1.2; ground.receiveShadow = true; scene.add(ground);
+
+// Layout
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h); camera.aspect = w/h;
+  const dist = Math.max(9.4, 1.7 / (Math.tan(THREE.MathUtils.degToRad(16)) * (w/h)));
+  camera.position.set(0, 0.9, dist); camera.lookAt(0, 0.85, 0);
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+// Pointer → target pose (springy follow)
+const target = { x:0, y:0 }, cur = { x:0, y:0 }, vel = { x:0, y:0 };
+function setPointer(cx, cy) { target.x = (cx/innerWidth)*2 - 1; target.y = (cy/innerHeight)*2 - 1; }
+addEventListener('pointermove', e => setPointer(e.clientX, e.clientY));
+addEventListener('touchmove', e => { const t=e.touches[0]; if (t) setPointer(t.clientX, t.clientY); }, { passive:true });
+addEventListener('pointerleave', () => { target.x = 0; target.y = 0; });
+
+let squish = 0;
+renderer.domElement.addEventListener('pointerdown', () => { squish = 1; });
+
+// ---------- Care (Tamagotchi) ----------
+const STATS = ['food', 'water', 'love', 'energy'];
+const store = { get(){ try { return JSON.parse(localStorage.getItem('emora-bear')) } catch { return null } },
+                set(v){ try { localStorage.setItem('emora-bear', JSON.stringify(v)) } catch {} } };
+const stats = Object.assign({ food:70, water:60, love:80, energy:75 }, store.get() || {});
+const DRAIN = { food:0.5, water:0.7, love:0.35, energy:0.3 }; // points per 10s
+
+// Mouth that opens while eating/drinking
+const mouth = new THREE.Mesh(new THREE.CircleGeometry(0.075, 32), new THREE.MeshStandardMaterial({ color:0x5a2320, roughness:0.7 }));
+mouth.position.set(0, 0.36, 0.93); mouth.rotation.x = 0.4; mouth.scale.set(1, 0.01, 1); neck.add(mouth);
+
+function cookie() {
+  const g = new THREE.Group();
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.05, 40), plush(0xd29a5c, '#ffffff'));
+  base.rotation.x = Math.PI/2; g.add(base);
+  for (let i=0;i<7;i++){ const a=i*2.4, r=0.04+((i*37)%10)/100;
+    const chip = sphere(0.024, darkMat); chip.position.set(Math.cos(a)*r, Math.sin(a)*r, 0.03); g.add(chip); }
+  g.userData.parts = [base]; return g;
+}
+function glass() {
+  const g = new THREE.Group();
+  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.1, 0.34, 40, 1, true),
+    new THREE.MeshPhysicalMaterial({ color:0xffffff, transmission:0.95, transparent:true, opacity:0.35, roughness:0.05, side:THREE.DoubleSide }));
+  g.add(cup);
+  const water = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.095, 0.26, 40), new THREE.MeshStandardMaterial({ color:0x58b6f0, transparent:true, opacity:0.85 }));
+  water.position.y = -0.03; g.add(water);
+  const straw = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.5, 12), new THREE.MeshStandardMaterial({ color:0xf38fa0 }));
+  straw.position.set(-0.04, 0.17, 0.05); straw.rotation.set(0.5, 0, 0.35); g.add(straw);
+  g.userData.water = water; return g;
+}
+
+// Floating emoji effects, anchored to a 3D point
+const fx = document.getElementById('fx');
+function burst(emoji, worldPos, n=1, spread=60) {
+  const v = worldPos.clone().project(camera);
+  const x = (v.x+1)/2*innerWidth, y = (1-v.y)/2*innerHeight;
+  for (let i=0;i<n;i++){
+    const s = document.createElement('span'); s.textContent = emoji; s.className = 'fx';
+    s.style.left = `${x + (Math.random()-0.5)*spread}px`; s.style.top = `${y + (Math.random()-0.5)*spread*0.4}px`;
+    s.style.animationDelay = `${i*90}ms`; s.style.setProperty('--dx', `${(Math.random()-0.5)*80}px`);
+    fx.appendChild(s); setTimeout(() => s.remove(), 2200 + i*90);
+  }
+}
+const headTop = () => neck.localToWorld(new THREE.Vector3(0, 1.45, 0.3));
+const mouthPos = () => neck.localToWorld(new THREE.Vector3(0, 0.38, 1.12));
+
+let action = null; // { type, t0, item }
+function startAction(type) {
+  if (action) return;
+  const a = { type, t0: clock.elapsedTime };
+  if (type === 'feed') a.item = cookie();
+  if (type === 'water') a.item = glass();
+  if (a.item) { a.item.position.set(2.6, -1.6, 2); scene.add(a.item); }
+  action = a;
+  document.querySelectorAll('#care button').forEach(b => b.disabled = true);
+}
+function endAction() {
+  if (action?.item) scene.remove(action.item);
+  action = null; mouth.scale.y = 0.01; eyelids.forEach(l => l.scale.y = 0.001);
+  document.querySelectorAll('#care button').forEach(b => b.disabled = false);
+}
+const bump = (k, n) => { stats[k] = Math.min(100, stats[k] + n); renderStats(); };
+
+function updateCare(dt, t) {
+  for (const k of STATS) stats[k] = Math.max(0, stats[k] - DRAIN[k]*dt/10);
+  // Mood: low stats make the bear droop
+  const low = Math.min(...STATS.map(k => stats[k]));
+  const droop = low < 30 ? (30 - low)/30 : 0;
+  neck.rotation.x += droop*0.18;
+  ears.forEach(({ear,s}) => ear.rotation.z += s*droop*0.35);
+  if (!action) { if (Math.random() < dt*0.25) renderStats(); return; }
+
+  const e = t - action.t0;
+  if (action.type === 'feed' || action.type === 'water') {
+    const it = action.item, dest = mouthPos(), FLY = 0.9;
+    if (e < FLY) { // arc in from the lower right
+      const k = e/FLY, ease = 1 - Math.pow(1-k, 3);
+      it.position.lerpVectors(new THREE.Vector3(2.6, -1.6, 2), dest, ease);
+      it.position.y += Math.sin(k*Math.PI)*0.8; it.rotation.z = (1-k)*2.5;
+      mouth.scale.y = Math.max(0.01, k*0.9);
+    } else {
+      it.position.copy(dest); const c = e - FLY;
+      if (action.type === 'feed') {
+        const bite = Math.min(3, Math.floor(c/0.45));
+        const s = 1 - bite*0.3; it.scale.setScalar(Math.max(0.01, s));
+        mouth.scale.y = 0.15 + Math.abs(Math.sin(c*7))*0.9;
+        neck.rotation.x += Math.abs(Math.sin(c*7))*0.08;
+        if (bite !== action.lastBite) { action.lastBite = bite; burst('🍪', dest, 2, 50); }
+        if (c > 1.5) { burst('💛', headTop(), 5); bump('food', 30); bump('love', 5); endAction(); }
+      } else {
+        const sip = Math.min(1, c/1.8);
+        it.userData.water.scale.y = Math.max(0.02, 1 - sip); it.userData.water.position.y = -0.03 - sip*0.13;
+        mouth.scale.y = 0.35 + Math.sin(c*10)*0.1; neck.rotation.x += 0.06;
+        if (Math.random() < dt*3) burst('💧', dest, 1, 40);
+        if (c > 2) { burst('✨', headTop(), 5); bump('water', 35); endAction(); }
+      }
+    }
+  } else if (action.type === 'hug') {
+    const k = Math.sin(Math.min(1, e/1.6) * Math.PI);
+    arms.forEach(({shoulder,s}) => { shoulder.rotation.x -= k*1.1; shoulder.rotation.z -= s*k*0.5; });
+    bodyPivot.scale.multiplyScalar(1 + k*0.05); neck.rotation.z += Math.sin(e*6)*0.05*k;
+    if (!action.hearted && e > 0.4) { action.hearted = true; burst('💗', headTop(), 7, 120); }
+    if (e > 1.8) { bump('love', 30); endAction(); }
+  } else if (action.type === 'nap') {
+    const close = Math.min(1, e/0.6) * (e > 3.4 ? Math.max(0, 1 - (e-3.4)/0.4) : 1);
+    eyelids.forEach(l => l.scale.y = Math.max(0.001, close));
+    neck.rotation.x += close*0.2; neck.rotation.z += close*Math.sin(e*1.5)*0.06;
+    bodyPivot.scale.y *= 1 + Math.sin(e*2.4)*0.02*close;
+    if (Math.floor(e/0.8) !== action.z && e < 3.2) { action.z = Math.floor(e/0.8); burst('💤', headTop(), 1, 20); }
+    if (e > 3.8) { bump('energy', 40); burst('☀️', headTop(), 1, 10); endAction(); }
+  }
+}
+
+const meters = {};
+function renderStats() {
+  for (const k of STATS) meters[k]?.style.setProperty('--v', `${Math.round(stats[k])}%`);
+  for (const k of STATS) meters[k]?.classList.toggle('low', stats[k] < 30);
+  store.set(stats);
+}
+const CARE = [['feed','🍪','Feed','food'], ['water','💧','Water','water'], ['hug','🤗','Hug','love'], ['nap','😴','Nap','energy']];
+const care = document.getElementById('care');
+for (const [type, icon, label, stat] of CARE) {
+  const b = document.createElement('button');
+  b.innerHTML = `<span class="ic">${icon}</span><span class="lb">${label}</span><span class="meter"><i></i></span>`;
+  b.onclick = () => startAction(type); care.appendChild(b);
+  meters[stat] = b.querySelector('.meter');
+}
+renderStats();
+addEventListener('beforeunload', () => store.set(stats));
+
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+  for (const k of ['x','y']) { // damped spring
+    vel[k] += (target[k] - cur[k]) * 60 * dt; vel[k] *= Math.pow(0.02, dt); cur[k] += vel[k] * dt;
+  }
+  // Body: gentle lean, keeps belly facing viewer so the QR stays scannable
+  bodyPivot.rotation.y = cur.x * 0.22;
+  bodyPivot.rotation.x = cur.y * 0.08;
+  bodyPivot.rotation.z = -cur.x * 0.04 + Math.sin(t*0.9)*0.015;
+  // Head looks further toward the cursor
+  neck.rotation.y = cur.x * 0.35;
+  neck.rotation.x = cur.y * 0.22 + Math.sin(t*1.3)*0.02;
+  neck.rotation.z = -cur.x * 0.08 + Math.sin(t*0.7)*0.03;
+  // Breathing + squish on tap
+  squish *= Math.pow(0.004, dt);
+  const breathe = 1 + Math.sin(t*2.1)*0.012;
+  bodyPivot.scale.set(breathe + squish*0.08, breathe - squish*0.1, breathe + squish*0.05);
+  bear.position.y = Math.sin(t*1.05)*0.03 - squish*0.05;
+  // Ears + arms wiggle with motion speed
+  const speed = Math.min(1, Math.hypot(vel.x, vel.y));
+  ears.forEach(({ear,s}) => { ear.rotation.z = s*(0.15 + Math.sin(t*3 + s)*0.04 + speed*0.25*Math.sin(t*14)); });
+  arms.forEach(({shoulder,s}) => { shoulder.rotation.z = s*(Math.sin(t*1.6 + s)*0.05) + s*speed*0.2; shoulder.rotation.x = -cur.y*0.15; });
+  updateCare(dt, t);
+  renderer.render(scene, camera);
+});
+</script>
+</body>
+</html>
