@@ -53,21 +53,32 @@
     <tr><td>Next step</td><td>SMS matching follow-up</td></tr>
   </table>
 </div>
+<script src="/track.js"></script>
 <script>
-  const PRACTICES = { 'demo-peds-01': { name:'Sunny Days Pediatrics', code:'PEDS-01' } };
-  const id = new URLSearchParams(location.search).get('p') || 'demo-peds-01';
-  const pr = PRACTICES[id] || { name:'Demo Pediatrics', code:id.toUpperCase() };
-  const msg = `Hi Emora! ${pr.name} gave us your info. We'd like help finding a therapist for our child. (Ref ${pr.code})`;
+  const T = window.EmoraTrack;
+  const id = new URLSearchParams(location.search).get('p') || 'sunny-days';
+  const pr = T.practice(id);
+  const code = id.toUpperCase();
+  const msg = `Hi Emora! ${pr.name} gave us your info. We'd like help finding a therapist for our child. (Ref ${code})`;
   document.getElementById('practice').textContent = pr.name;
   document.getElementById('field').textContent = msg;
   document.getElementById('m-practice').textContent = pr.name;
-  document.getElementById('m-code').textContent = pr.code;
+  document.getElementById('m-code').textContent = code;
+
+  // Log the scan: which pediatrician's QR, plus coarse visitor context
+  const vis = T.visitor(), ua = T.parseUA();
+  const base = { practice:id, vid:vis.id, returning:vis.returning, ...ua,
+                 lang:navigator.language, tz:Intl.DateTimeFormat().resolvedOptions().timeZone,
+                 sim: new URLSearchParams(location.search).has('sim') };
+  const geoP = T.geo();
+  geoP.then(g => T.publish({ type:'scan', ...base, ...g }));
   const thread = document.getElementById('thread');
   const bubble = (text, cls) => { const b = document.createElement('div'); b.className = `bubble ${cls}`; b.textContent = text;
     thread.appendChild(b); requestAnimationFrame(() => b.classList.add('show')); };
   const send = document.getElementById('send');
   send.addEventListener('click', () => {
     send.disabled = true; document.getElementById('field').textContent = '';
+    geoP.then(g => T.publish({ type:'text', ...base, ...g }));
     document.getElementById('hint').textContent = 'Sent. Emora now has your number and knows who referred you.';
     bubble(msg, 'me');
     setTimeout(() => bubble(`Hi! This is Emora, thanks for reaching out via ${pr.name}. To match your child with the right therapist: how old is your child, and what's been going on?`, 'them'), 1100);

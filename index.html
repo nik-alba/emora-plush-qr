@@ -12,18 +12,20 @@
   body { background:radial-gradient(120% 90% at 50% 40%, #fff9f2 0%, var(--bg) 55%, #f2e4d6 100%);
          color:var(--ink); font:16px/1.4 ui-rounded, "SF Pro Rounded", system-ui, -apple-system, sans-serif;
          overflow:hidden; }
-  #stage { position:fixed; inset:0; }
-  header { position:fixed; top:20px; left:0; right:0; text-align:center; pointer-events:none; padding:0 16px; }
+  :root { --panel:0px; }
+  @media (min-width:960px) { :root { --panel:380px; } }
+  #stage { position:fixed; top:0; bottom:0; left:0; right:var(--panel); }
+  header { position:fixed; top:20px; left:0; right:var(--panel); text-align:center; pointer-events:none; padding:0 16px; }
   .tag { display:inline-block; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted);
          border:1px solid #e6d6c8; border-radius:99px; padding:4px 10px; background:#fffaf5aa; }
   h1 { font-size:clamp(22px,4vw,34px); margin-top:10px; font-weight:700; }
-  footer { position:fixed; bottom:18px; left:0; right:0; text-align:center; color:var(--muted); font-size:14px; padding:0 16px; pointer-events:none; }
+  footer { position:fixed; bottom:18px; left:0; right:var(--panel); text-align:center; color:var(--muted); font-size:14px; padding:0 16px; pointer-events:none; }
   footer b { color:var(--accent); }
   #looks { margin-top:12px; display:inline-flex; gap:4px; padding:4px; border-radius:99px; background:#fffaf5cc;
            border:1px solid #e6d6c8; pointer-events:auto; }
   #looks button { font:inherit; font-size:14px; border:0; background:none; padding:6px 14px; border-radius:99px; cursor:pointer; color:var(--ink); }
   #looks button[aria-pressed="true"] { background:var(--accent); color:#fff; }
-  #care { position:fixed; bottom:50px; left:50%; transform:translateX(-50%); display:flex; gap:10px; z-index:2; }
+  #care { position:fixed; bottom:50px; left:calc((100% - var(--panel))/2); transform:translateX(-50%); display:flex; gap:10px; z-index:2; }
   #care button { font:inherit; border:1px solid #e6d6c8; background:#fffaf5e6; border-radius:18px; padding:8px 12px 10px;
                  min-width:72px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px;
                  box-shadow:0 4px 14px #b4876a22; transition:transform .15s; color:var(--ink); }
@@ -42,6 +44,53 @@
                      15% { opacity:1; transform:translate(-50%,-70%) scale(1.15) }
                      100% { opacity:0; transform:translate(calc(-50% + var(--dx)), -260%) scale(.9) } }
   @media (max-width:480px) { #care { gap:6px; bottom:64px } #care button { min-width:62px; padding:6px 8px 8px } }
+  #practices { margin-top:10px; display:inline-flex; flex-wrap:wrap; justify-content:center; gap:6px; pointer-events:auto; }
+  #practices button { font:inherit; font-size:13px; border:1px solid #e6d6c8; background:#fffaf5cc; border-radius:99px;
+                      padding:5px 12px 5px 9px; cursor:pointer; color:var(--ink); display:inline-flex; align-items:center; gap:6px; }
+  #practices button i { width:9px; height:9px; border-radius:50%; background:var(--c); }
+  #practices button[aria-pressed="true"] { border-color:var(--c); box-shadow:0 0 0 2px var(--c) inset; font-weight:600; }
+  #practices .n { font-size:11px; background:var(--c); color:#fff; border-radius:99px; padding:0 6px; min-width:18px; }
+
+  #log { position:fixed; top:0; right:0; bottom:0; width:380px; background:#fffdfa; border-left:1px solid #eadccf;
+         display:flex; flex-direction:column; z-index:4; font-size:13px; }
+  #log header { position:static; padding:18px 18px 10px; text-align:left; pointer-events:auto; }
+  #log h2 { font-size:15px; display:flex; align-items:center; gap:8px; }
+  .dot { width:8px; height:8px; border-radius:50%; background:#3fb39a; box-shadow:0 0 0 0 #3fb39a88; animation:live 1.8s infinite; }
+  .dot.off { background:#c9b9ad; animation:none; }
+  @keyframes live { 70% { box-shadow:0 0 0 7px #3fb39a00 } 100% { box-shadow:0 0 0 0 #3fb39a00 } }
+  #log .sub { color:var(--muted); font-size:12px; margin-top:2px; }
+  .kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:0 18px 12px; }
+  .kpi { background:#fbf3ea; border-radius:12px; padding:8px 10px; }
+  .kpi b { display:block; font-size:20px; }
+  .kpi span { color:var(--muted); font-size:11px; }
+  .bars { padding:0 18px 12px; display:grid; gap:6px; }
+  .bar { display:grid; grid-template-columns:1fr auto; gap:2px 8px; font-size:12px; }
+  .bar .track { grid-column:1/-1; height:6px; background:#f1e6dc; border-radius:6px; overflow:hidden; }
+  .bar .track i { display:block; height:100%; background:var(--c); width:var(--w); transition:width .5s; border-radius:6px; }
+  #rows { flex:1; overflow:auto; padding:0 12px 12px; border-top:1px solid #f0e4d9; }
+  .row { display:grid; grid-template-columns:auto 1fr auto; gap:2px 10px; padding:10px 6px; border-bottom:1px solid #f3e9df; align-items:start; }
+  .row.new { animation:pop .9s ease-out; }
+  @keyframes pop { 0% { background:#fff1c9; transform:translateX(16px); opacity:0 } 30% { opacity:1; transform:none } 100% { background:transparent } }
+  .row .badge { width:10px; height:10px; border-radius:50%; background:var(--c); margin-top:4px; }
+  .row .who { font-weight:600; }
+  .row .what { color:var(--muted); grid-column:2/4; }
+  .row .when { color:var(--muted); font-size:11px; white-space:nowrap; }
+  .pill { display:inline-block; font-size:10px; font-weight:600; border-radius:99px; padding:1px 6px; margin-left:4px; vertical-align:1px; }
+  .pill.text { background:#e4f5ee; color:#1f7a5c; } .pill.ret { background:#eef0ff; color:#4453b8; } .pill.sim { background:#f3f3f3; color:#888; }
+  .empty { color:var(--muted); text-align:center; padding:28px 12px; line-height:1.5; }
+  #log footer { position:static; padding:10px 18px 16px; text-align:left; pointer-events:auto; display:flex; gap:8px; align-items:center; border-top:1px solid #f0e4d9; }
+  #log footer button { font:inherit; font-size:12px; border:1px solid #e6d6c8; background:#fff; border-radius:99px; padding:5px 12px; cursor:pointer; }
+  #log footer small { color:var(--muted); font-size:11px; flex:1; }
+  #logToggle { display:none; }
+  @media (max-width:959px) {
+    #log { transform:translateX(100%); transition:transform .3s; width:min(380px, 92vw); box-shadow:-10px 0 30px #0002; }
+    #log.open { transform:none; }
+    #logToggle { display:flex; position:fixed; top:14px; right:14px; z-index:5; font:inherit; font-size:13px; font-weight:600; border:1px solid #e6d6c8;
+                 background:#fffaf5; border-radius:99px; padding:6px 12px; gap:6px; align-items:center; cursor:pointer; }
+  }
+  #toast { position:fixed; top:16px; left:calc((100% - var(--panel))/2); transform:translate(-50%,-140%); z-index:6; background:#2b2320; color:#fff;
+           border-radius:14px; padding:10px 16px; font-size:14px; transition:transform .45s cubic-bezier(.2,1.4,.4,1); max-width:90vw; }
+  #toast.show { transform:translate(-50%,0); }
   #caption { margin-top:8px; font-weight:700; color:var(--accent); font-size:18px; min-height:1em; }
 </style>
 </head>
@@ -50,22 +99,41 @@
 <header>
   <span class="tag">Demo · Pediatrician waiting room</span>
   <h1>Scan my tummy to find your child a therapist</h1>
+  <nav id="practices" aria-label="Referring pediatrician"></nav>
   <nav id="looks" hidden></nav>
   <div id="caption"></div>
 </header>
 <div id="fx"></div>
+<div id="toast" role="status"></div>
+<button id="logToggle"><span class="dot"></span>Live scans <span id="logCount">0</span></button>
+<aside id="log" aria-label="Live scan log">
+  <header>
+    <h2><span class="dot" id="liveDot"></span>Live scan log</h2>
+    <div class="sub">Every QR is unique to one pediatrician, so each scan is credited to its referrer.</div>
+  </header>
+  <div class="kpis">
+    <div class="kpi"><b id="kScans">0</b><span>Scans (12h)</span></div>
+    <div class="kpi"><b id="kTexts">0</b><span>Texts sent</span></div>
+    <div class="kpi"><b id="kConv">–</b><span>Scan → text</span></div>
+  </div>
+  <div class="bars" id="bars"></div>
+  <div id="rows"><div class="empty">Waiting for the first scan…<br>Point a phone camera at the bear's tummy.</div></div>
+  <footer><small>Location is approximate (city). No names or IPs stored.</small><button id="simBtn">Simulate a scan</button></footer>
+</aside>
 <nav id="care" aria-label="Care for the bear"></nav>
 <footer>Scan → text sends → Emora knows who referred you. <b>Two taps.</b></footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="/track.js"></script>
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
 </script>
 <script type="module">
 import * as THREE from 'three';
 
-const PRACTICE = 'demo-peds-01';
-const SCAN_URL = location.origin.startsWith('http') ? `${location.origin}/scan?p=${PRACTICE}` : `https://emora.lol/scan?p=${PRACTICE}`;
+const T = window.EmoraTrack;
+const params = new URLSearchParams(location.search);
+let PRACTICE = T.PRACTICES[params.get('p')] ? params.get('p') : 'sunny-days';
 
 const stage = document.getElementById('stage');
 const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
@@ -310,16 +378,20 @@ function applyLook(name) {
 }
 
 // QR belly patch: a plane bent to sit on the ellipsoid belly
-const qr = qrcode(0, 'M'); qr.addData(SCAN_URL); qr.make();
-const n = qr.getModuleCount(), quiet = 3, px = 16, size = (n + quiet*2) * px;
-const qc = document.createElement('canvas'); qc.width = qc.height = size;
-const qg = qc.getContext('2d');
-qg.fillStyle = '#fffaf3'; qg.fillRect(0,0,size,size);
-qg.fillStyle = '#2b1f1a';
-for (let r=0;r<n;r++) for (let c=0;c<n;c++) if (qr.isDark(r,c)) qg.fillRect((c+quiet)*px,(r+quiet)*px,px,px);
-const qrTex = new THREE.CanvasTexture(qc); qrTex.colorSpace = THREE.SRGBColorSpace;
-qrTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-qrTex.magFilter = THREE.NearestFilter; qrTex.minFilter = THREE.LinearMipmapLinearFilter;
+function qrTexture(url) {
+  const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
+  const n = qr.getModuleCount(), quiet = 3, px = 16, size = (n + quiet*2) * px;
+  const qc = document.createElement('canvas'); qc.width = qc.height = size;
+  const qg = qc.getContext('2d');
+  qg.fillStyle = '#fffaf3'; qg.fillRect(0,0,size,size);
+  qg.fillStyle = '#2b1f1a';
+  for (let r=0;r<n;r++) for (let c=0;c<n;c++) if (qr.isDark(r,c)) qg.fillRect((c+quiet)*px,(r+quiet)*px,px,px);
+  const tex = new THREE.CanvasTexture(qc); tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.LinearMipmapLinearFilter;
+  return tex;
+}
+const qrTex = qrTexture(T.scanUrl(PRACTICE));
 
 const PATCH = 0.86, cy = -0.05;
 function bentPlane(w, h, offset) {
@@ -364,7 +436,7 @@ ground.rotation.x = -Math.PI/2; ground.position.y = -1.2; ground.receiveShadow =
 
 // Layout
 function resize() {
-  const w = innerWidth, h = innerHeight;
+  const w = stage.clientWidth, h = stage.clientHeight;
   renderer.setSize(w, h); camera.aspect = w/h;
   const dist = Math.max(9.4, 1.7 / (Math.tan(THREE.MathUtils.degToRad(16)) * (w/h)));
   camera.position.set(0, 0.9, dist); camera.lookAt(0, 0.85, 0);
@@ -374,7 +446,7 @@ addEventListener('resize', resize); resize();
 
 // Pointer → target pose (springy follow)
 const target = { x:0, y:0 }, cur = { x:0, y:0 }, vel = { x:0, y:0 };
-function setPointer(cx, cy) { target.x = (cx/innerWidth)*2 - 1; target.y = (cy/innerHeight)*2 - 1; }
+function setPointer(cx, cy) { target.x = Math.max(-1.3, Math.min(1.3, (cx/stage.clientWidth)*2 - 1)); target.y = (cy/innerHeight)*2 - 1; }
 addEventListener('pointermove', e => setPointer(e.clientX, e.clientY));
 addEventListener('touchmove', e => { const t=e.touches[0]; if (t) setPointer(t.clientX, t.clientY); }, { passive:true });
 addEventListener('pointerleave', () => { target.x = 0; target.y = 0; });
@@ -417,7 +489,7 @@ function glass() {
 const fx = document.getElementById('fx');
 function burst(emoji, worldPos, n=1, spread=60) {
   const v = worldPos.clone().project(camera);
-  const x = (v.x+1)/2*innerWidth, y = (1-v.y)/2*innerHeight;
+  const x = (v.x+1)/2*stage.clientWidth, y = (1-v.y)/2*stage.clientHeight;
   for (let i=0;i<n;i++){
     const s = document.createElement('span'); s.textContent = emoji; s.className = 'fx';
     s.style.left = `${x + (Math.random()-0.5)*spread}px`; s.style.top = `${y + (Math.random()-0.5)*spread*0.4}px`;
@@ -511,6 +583,97 @@ for (const [type, icon, label, stat] of CARE) {
 }
 renderStats();
 addEventListener('beforeunload', () => store.set(stats));
+
+// ---------- Scan tracking ----------
+const events = [];
+const $ = id => document.getElementById(id);
+const practicesNav = $('practices');
+function selectPractice(id) {
+  PRACTICE = id;
+  const old = qrMesh.material.map; qrMesh.material.map = qrTexture(T.scanUrl(id)); qrMesh.material.needsUpdate = true; old.dispose();
+  practicesNav.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.p === id));
+  const u = new URL(location.href); u.searchParams.set('p', id); history.replaceState(null, '', u);
+  squish = 1;
+}
+for (const [id, p] of Object.entries(T.PRACTICES)) {
+  const b = document.createElement('button'); b.dataset.p = id; b.style.setProperty('--c', p.color);
+  b.innerHTML = `<i></i>${p.name}<span class="n" data-n="${id}">0</span>`;
+  b.onclick = () => selectPractice(id); practicesNav.appendChild(b);
+}
+practicesNav.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.p === PRACTICE));
+
+const ago = ms => { const s = Math.max(0, Math.round((Date.now()-ms)/1000));
+  return s < 60 ? `${s}s ago` : s < 3600 ? `${Math.floor(s/60)}m ago` : `${Math.floor(s/3600)}h ago`; };
+const place = e => [e.city, e.region || e.country].filter(Boolean).join(', ') || 'Location unknown';
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function renderLog(fresh) {
+  const scans = events.filter(e => e.type === 'scan'), texts = events.filter(e => e.type === 'text');
+  $('kScans').textContent = scans.length; $('kTexts').textContent = texts.length;
+  $('kConv').textContent = scans.length ? `${Math.round(texts.length/scans.length*100)}%` : '–';
+  $('logCount').textContent = scans.length;
+  const max = Math.max(1, ...Object.keys(T.PRACTICES).map(id => scans.filter(e => e.practice === id).length));
+  $('bars').innerHTML = Object.entries(T.PRACTICES).map(([id, p]) => {
+    const n = scans.filter(e => e.practice === id).length, t = texts.filter(e => e.practice === id).length;
+    const nEl = practicesNav.querySelector(`[data-n="${id}"]`); if (nEl) nEl.textContent = n;
+    return `<div class="bar" style="--c:${p.color};--w:${n/max*100}%"><span>${esc(p.name)} · ${esc(p.doc)}</span><span>${n} scan${n===1?'':'s'} · ${t} text${t===1?'':'s'}</span><div class="track"><i></i></div></div>`;
+  }).join('');
+  if (!events.length) return;
+  $('rows').innerHTML = [...events].sort((a,b) => b._t - a._t).slice(0, 60).map(e => {
+    const p = T.practice(e.practice);
+    const pills = (e.type === 'text' ? '<span class="pill text">texted Emora</span>' : '')
+      + (e.returning ? '<span class="pill ret">returning</span>' : '<span class="pill ret" style="background:#fff3e8;color:#b5562f">new</span>')
+      + (e.sim ? '<span class="pill sim">simulated</span>' : '');
+    const what = e.type === 'text' ? 'Sent the pre-filled text' : `${esc(place(e))} · ${esc(e.device)} · ${esc(e.os)} · ${esc(e.browser)}`;
+    return `<div class="row ${e._id === fresh ? 'new' : ''}" style="--c:${p.color}">
+      <span class="badge"></span><span class="who">${esc(p.name)}${pills}</span><span class="when" data-t="${e._t}">${ago(e._t)}</span>
+      <span class="what">${what}${e.type === 'scan' && e.lang ? ` · ${esc(e.lang)}` : ''}</span></div>`;
+  }).join('');
+}
+setInterval(() => document.querySelectorAll('.when[data-t]').forEach(el => el.textContent = ago(+el.dataset.t)), 5000);
+
+let toastTimer;
+function toast(html) { const t = $('toast'); t.innerHTML = html; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3800); }
+
+let backfilled = false;
+T.subscribe(e => {
+  events.push(e);
+  renderLog(backfilled ? e._id : null);
+  if (!backfilled) return;
+  const p = T.practice(e.practice);
+  if (e.type === 'scan') {
+    toast(`📍 <b>${esc(p.name)}</b> scan · ${esc(place(e))} · ${esc(e.device)}`);
+    if (e.practice !== PRACTICE) selectPractice(e.practice);
+    squish = 1; burst('📍', headTop(), 3, 80);
+  } else {
+    toast(`💬 Text received via <b>${esc(p.name)}</b>`);
+    burst('💬', headTop(), 3, 80);
+  }
+}).then(es => {
+  backfilled = true;
+  es.onerror = () => $('liveDot').classList.add('off');
+  es.onopen = () => $('liveDot').classList.remove('off');
+});
+setTimeout(() => { backfilled = true; }, 4000); // stream still works if backfill is slow
+
+$('logToggle').onclick = () => $('log').classList.toggle('open');
+
+// Simulated scan for remote demos (clearly labelled in the log)
+const SIM = [
+  { city:'Austin', region:'TX', device:'iPhone', os:'iOS 18.6', browser:'Safari', lang:'en-US' },
+  { city:'Round Rock', region:'TX', device:'Pixel 8', os:'Android 15', browser:'Chrome', lang:'es-US' },
+  { city:'Plano', region:'TX', device:'iPhone', os:'iOS 17.5', browser:'Safari', lang:'en-US' },
+  { city:'Hialeah', region:'FL', device:'SM-S921U', os:'Android 14', browser:'Chrome', lang:'es-US' },
+  { city:'Coral Gables', region:'FL', device:'iPhone', os:'iOS 18.6', browser:'Instagram in-app', lang:'en-US' },
+];
+$('simBtn').onclick = () => {
+  const g = SIM[Math.floor(Math.random()*SIM.length)];
+  const evt = { type:'scan', practice:PRACTICE, vid:'sim'+Math.random().toString(36).slice(2,7), returning:Math.random()<0.2, sim:true, country:'US', mobile:true, ...g };
+  T.publish(evt);
+  if (Math.random() < 0.6) setTimeout(() => T.publish({ ...evt, type:'text' }), 2500);
+};
+renderLog();
 
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
