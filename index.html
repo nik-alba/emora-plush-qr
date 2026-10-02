@@ -289,7 +289,26 @@ function tuft(mat, pos, dir, r, stretch) {
 }
 
 let currentLook = 'bear';
-function applyLook(name) {
+const extraHair = new THREE.Group(); neck.add(extraHair);
+const HAIR_MAX = 6;
+let hairLevels = {};
+try { hairLevels = JSON.parse(localStorage.getItem('emora-hair')) || {}; } catch {}
+function buildExtraHair() {
+  disposeGroup(extraHair);
+  const level = hairLevels[currentLook] || 0;
+  window.setFloofMeter?.(level / HAIR_MAX);
+  if (!level) return;
+  const mat = plush(LOOKS[currentLook]?.hair ?? 0xe8a07a, '#ffffff'); mat.bumpScale = 1.2;
+  const rnd = i => Math.abs((Math.sin(i*12.9898 + level*3.1) * 43758.5453) % 1);
+  for (let i = 0; i < level*24; i++) {
+    const az = -2.7 + rnd(i)*5.4, el = 0.3 + rnd(i+300)*1.25;
+    if (Math.abs(az) < 0.95 && el < 0.78) continue;           // keep the face clear
+    const c = sphere(0.1 + rnd(i+600)*0.07 + level*0.008, mat);
+    c.position.copy(headPt(az, el, 1.1 + level*0.045 + rnd(i+900)*0.08)); extraHair.add(c);
+  }
+}
+function applyLook(name) { applyLookBase(name); buildExtraHair(); }
+function applyLookBase(name) {
   const L = LOOKS[name] || LOOKS.bear;
   currentLook = LOOKS[name] ? name : 'bear'; window.refreshFeedIcon?.();
   disposeGroup(look); disposeGroup(lookBody);
@@ -723,6 +742,23 @@ function updateCare(dt, t) {
         if (c > 2) { burst('✨', headTop(), 5); bump('water', 35); endAction(); }
       }
     }
+  } else if (action.type === 'hair') {
+    if (!action.grown) {                       // grow one level, or a haircut at max floof
+      action.grown = true;
+      const lvl = hairLevels[currentLook] || 0;
+      action.cut = lvl >= HAIR_MAX;
+      hairLevels[currentLook] = action.cut ? 0 : lvl + 1;
+      try { localStorage.setItem('emora-hair', JSON.stringify(hairLevels)); } catch {}
+      buildExtraHair();
+      burst(action.cut ? '✂️' : '🪮', headTop(), 2, 40);
+      if (action.cut) toast('✂️ Fresh haircut!');
+      else if (hairLevels[currentLook] === HAIR_MAX) toast('💇 Maximum floof reached');
+    }
+    const k = Math.min(1, e/0.9);              // springy grow-in
+    extraHair.scale.setScalar(Math.max(0.01, 1 - Math.cos(k*Math.PI*2.5) * Math.exp(-k*4) * 0.6) * k + (1-k)*0.4);
+    neck.rotation.z += Math.sin(e*14) * 0.06 * (1-k);
+    if (!action.sparkled && e > 0.6) { action.sparkled = true; burst('✨', headTop(), 5, 120); }
+    if (e > 1.6) { extraHair.scale.setScalar(1); bump('love', 8); endAction(); }
   } else if (action.type === 'hug') {
     const k = Math.sin(Math.min(1, e/1.6) * Math.PI);
     arms.forEach(({shoulder,s}) => { shoulder.rotation.x -= k*1.1; shoulder.rotation.z -= s*k*0.5; });
@@ -745,7 +781,7 @@ function renderStats() {
   for (const k of STATS) meters[k]?.classList.toggle('low', stats[k] < 30);
   store.set(stats);
 }
-const CARE = [['feed','🍪','Feed','food'], ['water','💧','Water','water'], ['hug','🤗','Hug','love'], ['nap','😴','Nap','energy']];
+const CARE = [['feed','🍪','Feed','food'], ['water','💧','Water','water'], ['hug','🤗','Hug','love'], ['nap','😴','Nap','energy'], ['hair','🪮','Hair','floof']];
 const care = document.getElementById('care');
 for (const [type, icon, label, stat] of CARE) {
   const b = document.createElement('button');
@@ -754,6 +790,8 @@ for (const [type, icon, label, stat] of CARE) {
   meters[stat] = b.querySelector('.meter');
 }
 renderStats();
+window.setFloofMeter = v => meters.floof?.style.setProperty('--v', `${Math.round(v*100)}%`);
+setFloofMeter((hairLevels[currentLook] || 0) / HAIR_MAX);
 // Easter egg: care buttons stay hidden until unlocked (3 taps on the bear, or the faint paw)
 let careOn = false;
 try { careOn = localStorage.getItem('emora-care') === '1'; } catch {}
