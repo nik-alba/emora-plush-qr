@@ -1,7 +1,7 @@
 // Shared scan tracking for the demo. No backend: events go through a public ntfy.sh topic
 // (12h retention). Only coarse data is sent: practice, city/region, device, browser. Never the IP.
 window.EmoraTrack = (() => {
-  const TOPIC = 'emora-lol-scans-q7k2m9x4';
+  const TOPIC = 'emora-lol-scans-r7nrny2a';
   const FEED = `https://ntfy.sh/${TOPIC}`;
 
   // One QR (and one link) per referring pediatrician
@@ -57,7 +57,9 @@ window.EmoraTrack = (() => {
     return { city:null, region:null, country:null };
   }
 
+  const isDev = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   async function publish(evt) {
+    if (isDev) evt = { ...evt, dev:true };
     try { await fetch(FEED, { method:'POST', body: JSON.stringify(evt), keepalive:true }); } catch {}
   }
 
@@ -65,7 +67,8 @@ window.EmoraTrack = (() => {
   async function subscribe(onEvent) {
     const seen = new Set();
     const handle = m => { if (m.event !== 'message' || seen.has(m.id)) return; seen.add(m.id);
-      try { onEvent({ ...JSON.parse(m.message), _id:m.id, _t:m.time*1000 }); } catch {} };
+      try { const e = JSON.parse(m.message); if (e.sim || (e.dev && !isDev)) return;  // real scans only
+            onEvent({ ...e, _id:m.id, _t:m.time*1000 }); } catch {} };
     try {
       const r = await fetch(`${FEED}/json?poll=1&since=12h`);
       (await r.text()).split('\n').filter(Boolean).forEach(l => handle(JSON.parse(l)));

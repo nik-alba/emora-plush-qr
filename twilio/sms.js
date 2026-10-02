@@ -7,7 +7,7 @@ const PRACTICES = {
   'CORAL-BAY':  'Coral Bay Pediatrics',
 };
 const NTFY = 'https://ntfy.sh';
-const SCANS_TOPIC = 'emora-lol-scans-q7k2m9x4';
+const SCANS_TOPIC = 'emora-lol-scans-r7nrny2a';
 
 // One reply: the full intake experience lives on the web demo (works even before carrier approval)
 const link = (ref, code) => `https://emora.lol/chat?p=${ref.toLowerCase() || 'sunny-days'}${code ? `&c=${code}` : ''}`;
