@@ -1,7 +1,7 @@
 // Shared scan tracking for the demo. No backend: events go through a public ntfy.sh topic
 // (12h retention). Only coarse data is sent: practice, city/region, device, browser. Never the IP.
 window.EmoraTrack = (() => {
-  const TOPIC = 'emora-lol-scans-r7nrny2a';
+  const TOPIC = 'emora-lol-scans-jlilk0n3';
   const FEED = `https://ntfy.sh/${TOPIC}`;
 
   // One QR (and one link) per referring pediatrician
