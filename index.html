@@ -795,6 +795,7 @@ setFloofMeter((hairLevels[currentLook] || 0) / HAIR_MAX);
 // Easter egg: care buttons stay hidden until unlocked (3 taps on the bear, or the faint paw)
 let careOn = false;
 try { careOn = localStorage.getItem('emora-care') === '1'; } catch {}
+if (new URLSearchParams(location.search).has('care')) careOn = true;   // ?care shows the easter egg bar
 window.unlockCare = (fromTaps) => {
   careOn = fromTaps ? true : !careOn;
   care.hidden = !careOn;
