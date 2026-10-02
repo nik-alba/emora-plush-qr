@@ -39,7 +39,7 @@ exports.handler = async function (context, event, callback) {
     const now = Date.now();
     const pid = ref.toLowerCase();
     if (pid) await post(`emora-lol-chat-${pid}`, { dir: 'in', text: body, from: masked, ts: now });
-    if (turn === 0) {
+    if (start === 0 && pid) {                                           // first text of a QR hand-off only
       // The scan itself is logged by emora.lol/scan; this records that the real text arrived.
       await post(SCANS_TOPIC, { type: 'text', sms: true, practice: pid, from: masked });
     }

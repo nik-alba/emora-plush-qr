@@ -26,6 +26,10 @@
   #looks[hidden] { display:none; }
   #looks button { font:inherit; font-size:14px; border:0; background:none; padding:6px 14px; border-radius:99px; cursor:pointer; color:var(--ink); }
   #looks button[aria-pressed="true"] { background:var(--accent); color:#fff; }
+  #care[hidden] { display:none; }
+  #paw { position:fixed; left:14px; bottom:14px; z-index:3; border:0; background:none; font-size:18px; opacity:.28; cursor:pointer;
+         transition:opacity .2s, transform .2s; }
+  #paw:hover { opacity:.8; transform:rotate(-12deg) scale(1.15); }
   #care { position:fixed; bottom:50px; left:calc((100% - var(--panel))/2); transform:translateX(-50%); display:flex; gap:10px; z-index:2; }
   #care button { font:inherit; border:1px solid #e6d6c8; background:#fffaf5e6; border-radius:18px; padding:8px 12px 10px;
                  min-width:72px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px;
@@ -46,12 +50,11 @@
                      100% { opacity:0; transform:translate(calc(-50% + var(--dx)), -260%) scale(.9) } }
   @media (max-width:600px) {
     header .tag { display:none; } h1 { font-size:20px; margin-top:0; }
-    header #practices { flex-wrap:nowrap; overflow-x:auto; max-width:100%; justify-content:flex-start; scrollbar-width:none; }
-    header #practices button { flex:none; }
   }
   @media (max-width:480px) { #care { gap:6px; bottom:64px } #care button { min-width:62px; padding:6px 8px 8px } }
-  #practices { margin-top:10px; display:inline-flex; flex-wrap:wrap; justify-content:center; gap:6px; pointer-events:auto; }
-  #practices button { font:inherit; font-size:13px; border:1px solid #e6d6c8; background:#fffaf5cc; border-radius:99px;
+  .ref-row { padding:0 18px 12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:12px; color:var(--muted); }
+  #practices { display:inline-flex; flex-wrap:wrap; gap:6px; }
+  #practices button { font:inherit; font-size:12px; border:1px solid #e6d6c8; background:#fffaf5cc; border-radius:99px;
                       padding:5px 12px 5px 9px; cursor:pointer; color:var(--ink); display:inline-flex; align-items:center; gap:6px; }
   #practices button i { width:9px; height:9px; border-radius:50%; background:var(--c); }
   #practices button[aria-pressed="true"] { border-color:var(--c); box-shadow:0 0 0 2px var(--c) inset; font-weight:600; }
@@ -105,7 +108,6 @@
 <header>
   <span class="tag">Demo · Pediatrician waiting room</span>
   <h1>Scan my tummy to find your child a therapist</h1>
-  <nav id="practices" aria-label="Referring pediatrician"></nav>
   <nav id="looks" hidden></nav>
   <div id="caption"></div>
 </header>
@@ -122,11 +124,13 @@
     <div class="kpi"><b id="kTexts">0</b><span>Texts sent</span></div>
     <div class="kpi"><b id="kBooked">0</b><span>Booked</span></div>
   </div>
+  <div class="ref-row"><span>Referrer</span><nav id="practices" aria-label="Switch referring pediatrician"></nav></div>
   <div class="bars" id="bars"></div>
   <div id="rows"><div class="empty">Waiting for your scan…<br>Point your phone camera at the bear's tummy and watch it appear here.</div></div>
   <footer><small>Location is approximate (city). No names or IPs stored.</small></footer>
 </aside>
-<nav id="care" aria-label="Care for the bear"></nav>
+<nav id="care" aria-label="Care for the bear" hidden></nav>
+<button id="paw" title="Psst…" aria-label="Show bear care">🐾</button>
 <footer>Scan → text sends → Emora knows who referred you. <b>Two taps.</b></footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
@@ -421,8 +425,8 @@ const qrMesh = new THREE.Mesh(bentPlane(PATCH, PATCH, 0.052),
   new THREE.MeshStandardMaterial({ map:qrTex, roughness:0.9 }));
 bodyPivot.add(qrMesh);
 
-// Look toggle (hidden unless ?team)
-if (new URLSearchParams(location.search).has('team')) {
+// Look toggle: Bear / Zach / Ed / Robin
+{
   const bar = document.getElementById('looks'); bar.hidden = false;
   const caption = document.getElementById('caption');
   const set = name => {
@@ -574,7 +578,12 @@ addEventListener('touchmove', e => { const t=e.touches[0]; if (t) setPointer(t.c
 addEventListener('pointerleave', () => { target.x = 0; target.y = 0; });
 
 let squish = 0;
-renderer.domElement.addEventListener('pointerdown', () => { squish = 1; });
+let taps = [];
+renderer.domElement.addEventListener('pointerdown', () => {
+  squish = 1;
+  taps = [...taps.filter(t => performance.now() - t < 1500), performance.now()];
+  if (taps.length >= 3) { taps = []; window.unlockCare?.(true); }
+});
 
 // ---------- Care (Tamagotchi) ----------
 const STATS = ['food', 'water', 'love', 'energy'];
@@ -673,7 +682,7 @@ function updateCare(dt, t) {
   for (const k of STATS) stats[k] = Math.max(0, stats[k] - DRAIN[k]*dt/10);
   // Mood: low stats make the bear droop
   const low = Math.min(...STATS.map(k => stats[k]));
-  const droop = low < 30 ? (30 - low)/30 : 0;
+  const droop = careOn && low < 30 ? (30 - low)/30 : 0;
   neck.rotation.x += droop*0.18;
   ears.forEach(({ear,s}) => ear.rotation.z += s*droop*0.35);
   if (!action) { if (Math.random() < dt*0.25) renderStats(); return; }
@@ -745,6 +754,17 @@ for (const [type, icon, label, stat] of CARE) {
   meters[stat] = b.querySelector('.meter');
 }
 renderStats();
+// Easter egg: care buttons stay hidden until unlocked (3 taps on the bear, or the faint paw)
+let careOn = false;
+try { careOn = localStorage.getItem('emora-care') === '1'; } catch {}
+window.unlockCare = (fromTaps) => {
+  careOn = fromTaps ? true : !careOn;
+  care.hidden = !careOn;
+  try { localStorage.setItem('emora-care', careOn ? '1' : '0'); } catch {}
+  if (careOn && fromTaps) { toast('🧸 Psst… I could use a snack.'); burst('💛', headTop(), 3, 60); }
+};
+care.hidden = !careOn;
+document.getElementById('paw').onclick = () => unlockCare(false);
 window.refreshFeedIcon = () => { const ic = document.querySelector('#care [data-type=feed] .ic'); if (ic) ic.textContent = currentLook === 'robin' ? '🍜' : '🍪'; };
 refreshFeedIcon();
 addEventListener('beforeunload', () => store.set(stats));
