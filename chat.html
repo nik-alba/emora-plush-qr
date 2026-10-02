@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Emora · Text Demo</title>
+<meta name="description" content="Demo: the text conversation a parent has with Emora after their pediatrician refers them.">
+<style>
+  :root { --bg:#fff; --ink:#111; --muted:#8a8a8e; --blue:#0a84ff; --them:#e9e9eb; --accent:#e0795a; --line:#e5e5ea; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#000; --ink:#f2f2f7; --muted:#98989d; --them:#262629; --line:#2c2c2e; } }
+  * { box-sizing:border-box; margin:0; }
+  html, body { height:100%; }
+  body { background:#f2f2f7; color:var(--ink); font:16px/1.35 -apple-system, system-ui, sans-serif; display:flex; justify-content:center; }
+  @media (prefers-color-scheme: dark) { body { background:#111; } }
+  .phone { width:100%; max-width:440px; height:100%; display:flex; flex-direction:column; background:var(--bg); }
+  .top { padding:10px 16px 8px; text-align:center; border-bottom:1px solid var(--line); background:color-mix(in srgb, var(--bg) 92%, #888); position:relative; }
+  .avatar { width:46px; height:46px; border-radius:50%; margin:0 auto 3px; background:linear-gradient(135deg,#f0a07e,#e0795a); color:#fff;
+            display:grid; place-items:center; font-weight:700; font-size:18px; }
+  .top b { font-size:14px; } .top .sub { font-size:11px; color:var(--muted); }
+  .demo-tag { position:absolute; left:12px; top:12px; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+              color:var(--accent); border:1px solid var(--accent); border-radius:99px; padding:2px 7px; }
+  .timer { position:absolute; right:12px; top:12px; font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  #banner { display:none; background:#e4f5ee; color:#1f7a5c; font-size:12px; text-align:center; padding:6px 12px; }
+  #thread { flex:1; overflow-y:auto; padding:14px 12px 8px; display:flex; flex-direction:column; gap:4px; scroll-behavior:smooth; }
+  .stamp { align-self:center; font-size:11px; color:var(--muted); margin:10px 0 4px; text-align:center; }
+  .b { max-width:80%; padding:8px 13px; border-radius:19px; font-size:15.5px; white-space:pre-line; animation:in .25s ease-out; }
+  @keyframes in { from { opacity:0; transform:translateY(8px) scale(.98) } }
+  .me { align-self:flex-end; background:var(--blue); color:#fff; border-bottom-right-radius:6px; }
+  .them { align-self:flex-start; background:var(--them); border-bottom-left-radius:6px; }
+  .gap { margin-top:8px; }
+  .typing { align-self:flex-start; background:var(--them); border-radius:19px; padding:12px 14px; display:flex; gap:4px; }
+  .typing i { width:7px; height:7px; border-radius:50%; background:var(--muted); animation:dot 1.2s infinite; }
+  .typing i:nth-child(2) { animation-delay:.15s } .typing i:nth-child(3) { animation-delay:.3s }
+  @keyframes dot { 0%,60%,100% { opacity:.3; transform:none } 30% { opacity:1; transform:translateY(-3px) } }
+  .meta { align-self:flex-end; font-size:11px; color:var(--muted); margin:1px 4px 0; }
+  .card { align-self:flex-start; width:82%; border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--bg); animation:in .25s ease-out; }
+  .card .hd { display:flex; gap:10px; padding:10px 12px; align-items:center; }
+  .card .pic { width:42px; height:42px; border-radius:50%; display:grid; place-items:center; color:#fff; font-weight:700; flex:none; }
+  .card .nm { font-weight:600; font-size:15px; } .card .cr { font-size:12px; color:var(--muted); }
+  .card .bd { padding:0 12px 10px; font-size:13px; line-height:1.45; }
+  .card .why { color:#1f7a5c; font-size:12px; margin-top:4px; }
+  .card .ft { display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--line); padding:8px 12px; font-size:13px; }
+  .card .ft b { color:var(--blue); }
+  .confirm { border-color:#9ad6bf; } .confirm .hd { background:#e9f7f1; color:#1f5e47; }
+  #chips { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; padding:6px 12px 10px; min-height:8px; }
+  #chips button { font:inherit; font-size:14px; border:1.5px solid var(--blue); color:var(--blue); background:var(--bg); border-radius:99px;
+                  padding:7px 14px; cursor:pointer; animation:in .2s ease-out; }
+  #chips button:active { background:var(--blue); color:#fff; }
+  .compose { display:flex; gap:8px; align-items:center; padding:8px 12px calc(10px + env(safe-area-inset-bottom)); border-top:1px solid var(--line); }
+  .compose input { flex:1; border:1px solid var(--line); border-radius:20px; padding:9px 14px; font:inherit; font-size:15px; background:var(--bg); color:var(--ink); }
+  .compose button { width:34px; height:34px; border-radius:50%; border:0; background:var(--blue); color:#fff; font-size:17px; cursor:pointer; }
+  .compose input:disabled + button { background:#c7c7cc; }
+  .end { align-self:center; text-align:center; margin:14px 0 6px; padding:14px 16px; border-radius:16px; background:#fff4ec; color:#5b4339; font-size:13px; max-width:90%; }
+  .end b { font-size:22px; display:block; color:var(--accent); }
+  .end a { color:var(--accent); font-weight:600; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="top">
+    <span class="demo-tag">Demo</span><span class="timer" id="timer">0:00</span>
+    <div class="avatar">E</div><b>Emora Health</b><div class="sub" id="sub">Text line</div>
+  </div>
+  <div id="banner">✓ Your real text reached Emora's demo line</div>
+  <div id="thread"></div>
+  <div id="chips"></div>
+  <form class="compose" id="form"><input id="input" placeholder="Text Message" disabled autocomplete="off"><button aria-label="Send">↑</button></form>
+</div>
+
+<script src="/track.js"></script>
+<script>
+const T = window.EmoraTrack;
+const q = new URLSearchParams(location.search);
+const pid = T.PRACTICES[q.get('p')] ? q.get('p') : 'sunny-days';
+const P = T.practice(pid), code = q.get('c') || Math.random().toString(36).slice(2, 7);
+const city = P.city.split(',')[0];
+document.getElementById('sub').textContent = `Referred by ${P.name}`;
+
+const $thread = document.getElementById('thread'), $chips = document.getElementById('chips');
+const $input = document.getElementById('input'), $form = document.getElementById('form');
+const t0 = Date.now(); let done = false;
+setInterval(() => { if (done) return; const s = Math.floor((Date.now()-t0)/1000);
+  document.getElementById('timer').textContent = `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }, 500);
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const scroll = () => requestAnimationFrame(() => $thread.scrollTop = $thread.scrollHeight);
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const add = node => { $thread.appendChild(node); scroll(); return node; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let lastWho = null;
+function me(text) { const b = add(el('div', 'b me' + (lastWho !== 'me' ? ' gap' : ''), esc(text))); lastWho = 'me'; return b; }
+async function them(text, extra = 0) {
+  const ty = add(el('div', 'typing' + (lastWho !== 'them' ? ' gap' : ''), '<i></i><i></i><i></i>'));
+  await sleep(Math.min(1700, 500 + text.length * 14) + extra);
+  ty.remove(); add(el('div', 'b them' + (lastWho !== 'them' ? ' gap' : ''), text)); lastWho = 'them';
+  await sleep(250);
+}
+const stamp = text => add(el('div', 'stamp', text));
+function choose(options) {
+  return new Promise(res => {
+    $chips.innerHTML = '';
+    options.forEach(o => { const b = el('button', null, esc(o)); b.onclick = () => { $chips.innerHTML = ''; me(o); res(o); }; $chips.appendChild(b); });
+    scroll();
+  });
+}
+function typeIn(placeholder) {
+  return new Promise(res => {
+    $input.disabled = false; $input.placeholder = placeholder; $input.focus();
+    $form.onsubmit = e => { e.preventDefault(); const v = $input.value.trim(); if (!v) return;
+      $input.value = ''; $input.disabled = true; $input.placeholder = 'Text Message'; me(v); res(v); };
+  });
+}
+const nextDay = (dow, h, m) => { const d = new Date(); d.setDate(d.getDate() + ((dow - d.getDay() + 7) % 7 || 7)); d.setHours(h, m, 0, 0); return d; };
+const fmt = d => d.toLocaleString('en-US', { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+
+const THERAPISTS = [
+  { name:'Sarah Kim', cred:'PsyD · Licensed Psychologist', color:'#7c6cf0', tags:['Anxiety','Ages 5–12','Play therapy'], fits:['Anxiety or worry','Not sure yet'],
+    bio:'9 years with kids. Uses games and drawing so sessions feel easy.', slots:[nextDay(4,16,0), nextDay(5,15,30), nextDay(1,17,0)] },
+  { name:'Marcus Reed', cred:'LCSW · Clinical Social Worker', color:'#2f9e7c', tags:['ADHD','Teens','Parent coaching'], fits:['ADHD / focus','Behavior at school'],
+    bio:'Former school counselor. Works closely with parents and teachers.', slots:[nextDay(3,17,30), nextDay(6,10,0), nextDay(2,16,30)] },
+  { name:'Ana Morales', cred:'LPC · Licensed Counselor · Habla español', color:'#e0795a', tags:['Mood','Anxiety','Bilingual'], fits:['Mood or sadness','Anxiety or worry'],
+    bio:'Bilingual sessions for kids and parents. Gentle, steady approach.', slots:[nextDay(5,14,0), nextDay(1,16,0), nextDay(3,15,0)] },
+];
+const EMPATHY = {
+  'Anxiety or worry': 'Worry is one of the most common things we help kids with, and it responds really well to therapy.',
+  'ADHD / focus': 'Focus and ADHD are a big part of what our therapists work on, with kids and with parents.',
+  'Mood or sadness': "It's good you're paying attention to this. Kids often feel better quickly with the right support.",
+  'Behavior at school': "School struggles are often a sign something's going on underneath. We can help figure that out.",
+  'Not sure yet': "That's completely okay. A first session is a good way to understand what's going on.",
+};
+const COST = { 'Blue Cross Blue Shield':'$25 copay', 'Aetna':'$30 copay', 'UnitedHealthcare':'$20 copay', 'Medicaid':'$0', 'Self-pay':'$150 per session' };
+
+function therapistCard(t, why) {
+  return add(el('div', 'card', `<div class="hd"><div class="pic" style="background:${t.color}">${t.name.split(' ').map(s=>s[0]).join('')}</div>
+    <div><div class="nm">${t.name}</div><div class="cr">${t.cred}</div></div></div>
+    <div class="bd">${t.tags.join(' · ')}<br>${t.bio}<div class="why">✓ ${why}</div></div>
+    <div class="ft"><span>Next: ${fmt(t.slots[0])}</span><b>In network</b></div>`));
+}
+
+async function run() {
+  stamp(`Today ${new Date().toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' })}`);
+  me(`Hi Emora! ${P.doc} at ${P.name} referred us. We're looking for a therapist for our child.`);
+  add(el('div', 'meta', 'Delivered'));
+  await sleep(700);
+
+  // 1. Warm hand-off from the pediatrician
+  await them(`Hi! This is Maya from Emora 👋 ${P.doc}'s office told us you might reach out. We're so glad you did.`);
+  await them(`We help families find a child therapist who takes your insurance, usually with a first session within a week.`);
+  // 2. Trust before questions
+  await them(`A few things up front: this is free to use, there's no obligation, and what you share stays private.`);
+  let a = await choose(["Sounds good", "Who is Emora?"]);
+  if (a === 'Who is Emora?') {
+    await them(`Emora is a mental health practice just for kids, teens and families. All our therapists are licensed and specialize in young people.`);
+    await them(`We work alongside ${P.doc}, so your child's care stays connected. Many families in ${city} come to us through their pediatrician.`);
+    await choose(['Okay, sounds good']);
+  }
+  // 3. Light intake
+  await them(`Great. Just 4 quick questions so I can match you well. How old is your child?`);
+  const age = await choose(['Under 6', '6–12', '13–17']);
+  await them(`Thank you. What's been going on? Pick what fits best.`);
+  const concern = await choose(Object.keys(EMPATHY));
+  await them(EMPATHY[concern]);
+  await them(`What insurance do you have?`);
+  const ins = await choose(Object.keys(COST));
+  await them(ins === 'Self-pay' ? `No problem. Self-pay sessions are ${COST[ins]} (example price), and we can share a receipt for reimbursement.`
+                                : `✓ Good news: you're in network with ${ins}. Estimated cost: ${COST[ins]} per session (example).`, 300);
+  await them(`Last one: in person, video, or either?`);
+  const mode = await choose(['In person', 'Video', 'Either']);
+
+  // 4. Matches
+  await them(`Here are 3 therapists who fit, all with openings this week:`, 500);
+  const ranked = [...THERAPISTS].sort((x, y) => (y.fits.includes(concern)) - (x.fits.includes(concern)));
+  for (const t of ranked) {
+    const why = t.fits.includes(concern) ? `Specializes in ${concern.toLowerCase()}` : `Great with ages ${age}`;
+    therapistCard(t, mode === 'In person' ? `${why} · Office in ${city}` : why);
+    await sleep(350);
+  }
+  const pick = await choose(ranked.map(t => t.name.split(' ')[0]));
+  const T1 = ranked.find(t => t.name.startsWith(pick));
+  await them(`Great choice. Parents tell us their kids look forward to sessions with ${T1.name.split(' ')[0]}.`);
+  await them(`Here are ${T1.name.split(' ')[0]}'s next openings:`);
+  const slot = await choose(T1.slots.map(fmt));
+
+  // 5. Book
+  await them(`Perfect. What's your child's first name? (Use a pretend name, this is a demo.)`);
+  const kid = (await typeIn("Child's first name")).split(' ')[0].replace(/[^\p{L}'-]/gu, '').slice(0, 20) || 'your child';
+  await them(`Booking ${kid}'s first session now…`, 400);
+  add(el('div', 'card confirm', `<div class="hd">✅ <b>First session booked</b></div>
+    <div class="bd" style="padding-top:8px">${esc(kid)} with <b>${T1.name}</b><br>${slot} · ${mode === 'In person' ? `In person, ${city}` : 'Video'}<br>
+    ${ins === 'Self-pay' ? 'Self-pay' : `${ins} · in network`}</div>
+    <div class="ft"><span>Intake form sent</span><b>Add to calendar</b></div>`));
+  T.publish({ type:'booked', practice:pid, chat:code, sim: !q.get('c') });
+  await sleep(500);
+  await them(`You're all set! I've texted you a short intake form (5 min). Can we let ${P.doc} know ${kid} is connected to care?`);
+  const loop = await choose([`Yes, let ${P.doc.split(' ')[1]} know`, 'No thanks']);
+  await them(loop.startsWith('Yes') ? `Done. ${P.doc}'s office will get a note that ${kid} has started care, so everyone's on the same page.`
+                                    : `No problem, we'll keep it between us.`);
+  await them(`Text me here anytime. Talk soon! - Maya, Emora`);
+  stamp('The day before');
+  await them(`Reminder: ${kid}'s first session with ${T1.name.split(' ')[0]} is tomorrow, ${slot.split(', ').slice(-1)[0]}. It's 50 minutes, mostly getting to know each other. Reply C to confirm.`, 600);
+
+  done = true;
+  const s = Math.floor((Date.now() - t0) / 1000);
+  add(el('div', 'end', `<b>${Math.floor(s/60)}m ${s%60}s</b>from pediatrician referral to a booked first session.<br><br>
+    This was a demo. <a href="/chat?p=${pid}">Restart</a> · <a href="/?p=${pid}">Back to the bear</a>`));
+}
+run();
+
+// If the parent's real text reaches the Twilio line, show it
+if (q.get('c')) {
+  try { const es = new EventSource(`https://ntfy.sh/emora-lol-chat-${encodeURIComponent(code)}/sse?since=1h`);
+        es.onmessage = e => { try { const m = JSON.parse(JSON.parse(e.data).message); if (m.dir === 'in') document.getElementById('banner').style.display = 'block'; } catch {} }; } catch {}
+}
+</script>
+</body>
+</html>

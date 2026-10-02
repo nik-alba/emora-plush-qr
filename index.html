@@ -114,7 +114,7 @@
   <div class="kpis">
     <div class="kpi"><b id="kScans">0</b><span>Scans (12h)</span></div>
     <div class="kpi"><b id="kTexts">0</b><span>Texts sent</span></div>
-    <div class="kpi"><b id="kConv">–</b><span>Scan → text</span></div>
+    <div class="kpi"><b id="kBooked">0</b><span>Booked</span></div>
   </div>
   <div class="bars" id="bars"></div>
   <div id="rows"><div class="empty">Waiting for the first scan…<br>Point a phone camera at the bear's tummy.</div></div>
@@ -278,8 +278,10 @@ function tuft(mat, pos, dir, r, stretch) {
   m.position.copy(pos); m.quaternion.setFromUnitVectors(UP, dir.clone().normalize()); look.add(m); return m;
 }
 
+let currentLook = 'bear';
 function applyLook(name) {
   const L = LOOKS[name] || LOOKS.bear;
+  currentLook = LOOKS[name] ? name : 'bear'; window.refreshFeedIcon?.();
   disposeGroup(look); disposeGroup(lookBody);
   eyeMat.color.set(0x2a1d18);
   arms.forEach(a => a.arm.material = furMat);
@@ -465,6 +467,36 @@ const DRAIN = { food:0.5, water:0.7, love:0.35, energy:0.3 }; // points per 10s
 const mouth = new THREE.Mesh(new THREE.CircleGeometry(0.075, 32), new THREE.MeshStandardMaterial({ color:0x5a2320, roughness:0.7 }));
 mouth.position.set(0, 0.36, 0.93); mouth.rotation.x = 0.4; mouth.scale.set(1, 0.01, 1); neck.add(mouth);
 
+// Robin's snack: a ramen bowl with chopsticks
+function ramen() {
+  const g = new THREE.Group();
+  const prof = []; for (let i=0;i<=12;i++){ const a=i/12*Math.PI/2; prof.push(new THREE.Vector2(0.06+Math.sin(a)*0.26, -0.22+(1-Math.cos(a))*0.22)); }
+  const bowl = new THREE.Mesh(new THREE.LatheGeometry(prof, 48), new THREE.MeshStandardMaterial({ color:0xc8342b, roughness:0.35, side:THREE.DoubleSide }));
+  bowl.castShadow = true; g.add(bowl);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.014, 8, 48), new THREE.MeshStandardMaterial({ color:0xfaf3e8, roughness:0.4 }));
+  rim.rotation.x = Math.PI/2; g.add(rim);
+  const broth = new THREE.Mesh(new THREE.CircleGeometry(0.3, 40), new THREE.MeshStandardMaterial({ color:0xd98a3d, roughness:0.25 }));
+  broth.rotation.x = -Math.PI/2; broth.position.y = -0.03; g.add(broth);
+  const noodles = new THREE.Group(); const nMat = new THREE.MeshStandardMaterial({ color:0xf3d27a, roughness:0.5 });
+  for (let i=0;i<9;i++){ const t = new THREE.Mesh(new THREE.TorusGeometry(0.05+((i*7)%5)*0.012, 0.011, 8, 24, Math.PI*1.6), nMat);
+    t.rotation.set(Math.PI/2 + (i%3-1)*0.3, 0, i*0.9); t.position.set(Math.cos(i*2.1)*0.12, -0.01, Math.sin(i*2.1)*0.1); noodles.add(t); }
+  g.add(noodles);
+  const egg = new THREE.Mesh(new THREE.SphereGeometry(0.07, 24, 12, 0, Math.PI*2, 0, Math.PI/2), new THREE.MeshStandardMaterial({ color:0xfffaf0 }));
+  egg.scale.set(1, 0.5, 1.25); egg.position.set(0.14, -0.01, 0.08); g.add(egg);
+  const yolk = new THREE.Mesh(new THREE.CircleGeometry(0.035, 20), new THREE.MeshStandardMaterial({ color:0xf0a020 }));
+  yolk.rotation.x = -Math.PI/2; yolk.position.set(0.14, 0.027, 0.08); g.add(yolk);
+  const nori = new THREE.Mesh(new THREE.PlaneGeometry(0.14, 0.2), new THREE.MeshStandardMaterial({ color:0x1f3324, side:THREE.DoubleSide }));
+  nori.position.set(-0.17, 0.05, -0.08); nori.rotation.set(-0.3, 0.6, 0.2); g.add(nori);
+  for (let i=0;i<10;i++){ const sc = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.01, 10), new THREE.MeshStandardMaterial({ color:0x6cbf4a }));
+    sc.position.set(Math.cos(i*1.7)*0.18, -0.01, Math.sin(i*2.3)*0.16); g.add(sc); }
+  const chop = new THREE.Group(); const wood = new THREE.MeshStandardMaterial({ color:0xc9a26b, roughness:0.6 });
+  for (const s of [-1,1]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.013, 0.62, 10), wood);
+    c.position.set(s*0.025, 0.2, 0); c.rotation.z = s*0.04; chop.add(c); }
+  const lift = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.009, 6, 16, Math.PI), nMat); lift.position.set(0, -0.08, 0); lift.rotation.z = Math.PI; chop.add(lift);
+  chop.position.set(0.02, 0.02, 0.02); chop.rotation.z = -0.25; g.add(chop);
+  g.rotation.x = 0.5; // tip the bowl toward the viewer
+  g.userData = { ramen:true, noodles, broth, chop, lift }; return g;
+}
 function cookie() {
   const g = new THREE.Group();
   const base = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.05, 40), plush(0xd29a5c, '#ffffff'));
@@ -504,7 +536,7 @@ let action = null; // { type, t0, item }
 function startAction(type) {
   if (action) return;
   const a = { type, t0: clock.elapsedTime };
-  if (type === 'feed') a.item = cookie();
+  if (type === 'feed') a.item = currentLook === 'robin' ? ramen() : cookie();
   if (type === 'water') a.item = glass();
   if (a.item) { a.item.position.set(2.6, -1.6, 2); scene.add(a.item); }
   action = a;
@@ -528,7 +560,8 @@ function updateCare(dt, t) {
 
   const e = t - action.t0;
   if (action.type === 'feed' || action.type === 'water') {
-    const it = action.item, dest = mouthPos(), FLY = 0.9;
+    const it = action.item, FLY = 0.9;
+    const dest = it.userData.ramen ? mouthPos().add(new THREE.Vector3(0, -0.5, 0.1)) : mouthPos();
     if (e < FLY) { // arc in from the lower right
       const k = e/FLY, ease = 1 - Math.pow(1-k, 3);
       it.position.lerpVectors(new THREE.Vector3(2.6, -1.6, 2), dest, ease);
@@ -536,7 +569,17 @@ function updateCare(dt, t) {
       mouth.scale.y = Math.max(0.01, k*0.9);
     } else {
       it.position.copy(dest); const c = e - FLY;
-      if (action.type === 'feed') {
+      if (action.type === 'feed' && it.userData.ramen) {
+        // slurp: chopsticks lift noodles to the mouth, the bowl empties
+        const { noodles, broth, chop, lift } = it.userData;
+        const k = Math.min(1, c/2.4), cyc = Math.max(0, Math.sin(c*4.2));
+        chop.position.y = 0.02 + cyc*0.32; lift.visible = cyc > 0.2;
+        noodles.scale.setScalar(Math.max(0.05, 1 - k)); broth.position.y = -0.03 - k*0.1;
+        mouth.scale.y = 0.2 + cyc*0.8; neck.rotation.x += cyc*0.06;
+        const slurp = Math.floor(c*4.2/Math.PI);
+        if (slurp !== action.lastBite) { action.lastBite = slurp; burst('🍜', dest, 2, 60); }
+        if (c > 2.6) { burst('💛', headTop(), 5); bump('food', 35); bump('love', 5); endAction(); }
+      } else if (action.type === 'feed') {
         const bite = Math.min(3, Math.floor(c/0.45));
         const s = 1 - bite*0.3; it.scale.setScalar(Math.max(0.01, s));
         mouth.scale.y = 0.15 + Math.abs(Math.sin(c*7))*0.9;
@@ -578,10 +621,12 @@ const care = document.getElementById('care');
 for (const [type, icon, label, stat] of CARE) {
   const b = document.createElement('button');
   b.innerHTML = `<span class="ic">${icon}</span><span class="lb">${label}</span><span class="meter"><i></i></span>`;
-  b.onclick = () => startAction(type); care.appendChild(b);
+  b.onclick = () => startAction(type); b.dataset.type = type; care.appendChild(b);
   meters[stat] = b.querySelector('.meter');
 }
 renderStats();
+window.refreshFeedIcon = () => { const ic = document.querySelector('#care [data-type=feed] .ic'); if (ic) ic.textContent = currentLook === 'robin' ? '🍜' : '🍪'; };
+refreshFeedIcon();
 addEventListener('beforeunload', () => store.set(stats));
 
 // ---------- Scan tracking ----------
@@ -608,23 +653,24 @@ const place = e => [e.city, e.region || e.country].filter(Boolean).join(', ') ||
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 function renderLog(fresh) {
-  const scans = events.filter(e => e.type === 'scan'), texts = events.filter(e => e.type === 'text');
+  const scans = events.filter(e => e.type === 'scan'), texts = events.filter(e => e.type === 'text'), booked = events.filter(e => e.type === 'booked');
   $('kScans').textContent = scans.length; $('kTexts').textContent = texts.length;
-  $('kConv').textContent = scans.length ? `${Math.round(texts.length/scans.length*100)}%` : '–';
+  $('kBooked').textContent = booked.length;
   $('logCount').textContent = scans.length;
   const max = Math.max(1, ...Object.keys(T.PRACTICES).map(id => scans.filter(e => e.practice === id).length));
   $('bars').innerHTML = Object.entries(T.PRACTICES).map(([id, p]) => {
-    const n = scans.filter(e => e.practice === id).length, t = texts.filter(e => e.practice === id).length;
+    const n = scans.filter(e => e.practice === id).length, t = texts.filter(e => e.practice === id).length, bk = booked.filter(e => e.practice === id).length;
     const nEl = practicesNav.querySelector(`[data-n="${id}"]`); if (nEl) nEl.textContent = n;
-    return `<div class="bar" style="--c:${p.color};--w:${n/max*100}%"><span>${esc(p.name)} · ${esc(p.doc)}</span><span>${n} scan${n===1?'':'s'} · ${t} text${t===1?'':'s'}</span><div class="track"><i></i></div></div>`;
+    return `<div class="bar" style="--c:${p.color};--w:${n/max*100}%"><span>${esc(p.name)} · ${esc(p.doc)}</span><span>${n} scan${n===1?'':'s'} · ${t} text${t===1?'':'s'} · ${bk} booked</span><div class="track"><i></i></div></div>`;
   }).join('');
   if (!events.length) return;
   $('rows').innerHTML = [...events].sort((a,b) => b._t - a._t).slice(0, 60).map(e => {
     const p = T.practice(e.practice);
-    const pills = (e.type === 'text' ? '<span class="pill text">texted Emora</span>' : '')
-      + (e.returning ? '<span class="pill ret">returning</span>' : '<span class="pill ret" style="background:#fff3e8;color:#b5562f">new</span>')
+    const pills = (e.type === 'text' ? `<span class="pill text">${e.sms ? 'real SMS' : 'texted Emora'}</span>` : '')
+      + (e.type === 'booked' ? '<span class="pill text" style="background:#e9f7f1">booked</span>' : '')
+      + (e.type !== 'scan' ? '' : e.returning ? '<span class="pill ret">returning</span>' : '<span class="pill ret" style="background:#fff3e8;color:#b5562f">new</span>')
       + (e.sim ? '<span class="pill sim">simulated</span>' : '');
-    const what = e.type === 'text' ? 'Sent the pre-filled text' : `${esc(place(e))} · ${esc(e.device)} · ${esc(e.os)} · ${esc(e.browser)}`;
+    const what = e.type === 'booked' ? 'Booked a first session · referrer notified' : e.type === 'text' ? (e.sms ? `Text received on Emora's line from ${esc(e.from || '')}` : 'Sent the pre-filled text') : `${esc(place(e))} · ${esc(e.device)} · ${esc(e.os)} · ${esc(e.browser)}`;
     return `<div class="row ${e._id === fresh ? 'new' : ''}" style="--c:${p.color}">
       <span class="badge"></span><span class="who">${esc(p.name)}${pills}</span><span class="when" data-t="${e._t}">${ago(e._t)}</span>
       <span class="what">${what}${e.type === 'scan' && e.lang ? ` · ${esc(e.lang)}` : ''}</span></div>`;
@@ -646,6 +692,9 @@ T.subscribe(e => {
     toast(`📍 <b>${esc(p.name)}</b> scan · ${esc(place(e))} · ${esc(e.device)}`);
     if (e.practice !== PRACTICE) selectPractice(e.practice);
     squish = 1; burst('📍', headTop(), 3, 80);
+  } else if (e.type === 'booked') {
+    toast(`📅 First session booked via <b>${esc(p.name)}</b>`);
+    burst('📅', headTop(), 4, 90);
   } else {
     toast(`💬 Text received via <b>${esc(p.name)}</b>`);
     burst('💬', headTop(), 3, 80);
@@ -671,7 +720,8 @@ $('simBtn').onclick = () => {
   const g = SIM[Math.floor(Math.random()*SIM.length)];
   const evt = { type:'scan', practice:PRACTICE, vid:'sim'+Math.random().toString(36).slice(2,7), returning:Math.random()<0.2, sim:true, country:'US', mobile:true, ...g };
   T.publish(evt);
-  if (Math.random() < 0.6) setTimeout(() => T.publish({ ...evt, type:'text' }), 2500);
+  if (Math.random() < 0.7) setTimeout(() => T.publish({ ...evt, type:'text' }), 2500);
+  if (Math.random() < 0.4) setTimeout(() => T.publish({ ...evt, type:'booked' }), 6000);
 };
 renderLog();
 

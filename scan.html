@@ -5,85 +5,54 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Emora · Text to Match</title>
 <style>
-  :root { --bg:#f2f2f7; --ink:#111; --muted:#8a8a8e; --blue:#0a84ff; --accent:#e0795a; }
+  :root { --bg:#fbf4ec; --ink:#2b2320; --muted:#7a6a62; --accent:#e0795a; --blue:#0a84ff; }
   * { box-sizing:border-box; margin:0; }
-  body { background:var(--bg); color:var(--ink); font:16px/1.35 -apple-system, system-ui, sans-serif; min-height:100vh;
-         display:flex; flex-direction:column; align-items:center; }
-  .note { width:100%; max-width:420px; padding:14px 16px; font-size:13px; color:#6b5a52; background:#fff4ec; border-bottom:1px solid #f0dccd; text-align:center; }
-  .phone { width:100%; max-width:420px; flex:1; display:flex; flex-direction:column; background:#fff; }
-  .top { padding:14px 16px 10px; text-align:center; border-bottom:1px solid #e5e5ea; background:#f9f9f9; }
-  .avatar { width:44px; height:44px; border-radius:50%; margin:0 auto 4px; background:var(--accent); color:#fff;
-            display:grid; place-items:center; font-weight:700; }
-  .to { font-size:12px; color:var(--muted); }
-  .thread { flex:1; padding:16px; display:flex; flex-direction:column; gap:8px; }
-  .bubble { max-width:78%; padding:9px 13px; border-radius:18px; font-size:15px; opacity:0; transform:translateY(6px); transition:.35s; }
-  .bubble.show { opacity:1; transform:none; }
-  .me { align-self:flex-end; background:var(--blue); color:#fff; border-bottom-right-radius:5px; }
-  .them { align-self:flex-start; background:#e9e9eb; border-bottom-left-radius:5px; }
-  .compose { display:flex; gap:8px; align-items:flex-end; padding:10px 12px 18px; border-top:1px solid #e5e5ea; }
-  .field { flex:1; border:1px solid #d1d1d6; border-radius:20px; padding:8px 12px; font-size:15px; min-height:38px; }
-  .send { width:36px; height:36px; border-radius:50%; border:0; background:var(--blue); color:#fff; font-size:18px; cursor:pointer;
-          animation:pulse 1.6s infinite; }
-  .send:disabled { background:#c7c7cc; animation:none; cursor:default; }
-  @keyframes pulse { 0%,100%{ box-shadow:0 0 0 0 #0a84ff66 } 50%{ box-shadow:0 0 0 8px #0a84ff00 } }
-  .hint { font-size:12px; color:var(--muted); text-align:center; padding:0 16px 12px; }
-  .meta { width:100%; max-width:420px; padding:14px 16px 24px; font-size:13px; color:#555; }
-  .meta table { width:100%; border-collapse:collapse; margin-top:6px; }
-  .meta td { padding:5px 0; border-bottom:1px solid #e5e5ea; }
-  .meta td:first-child { color:var(--muted); width:45%; }
+  body { background:var(--bg); color:var(--ink); font:16px/1.45 -apple-system, system-ui, sans-serif; min-height:100vh;
+         display:flex; align-items:center; justify-content:center; padding:24px 16px; text-align:center; }
+  main { max-width:380px; width:100%; }
+  .bear { font-size:64px; animation:bob 2s ease-in-out infinite; }
+  @keyframes bob { 50% { transform:translateY(-6px) rotate(-3deg) } }
+  h1 { font-size:24px; margin:8px 0 6px; }
+  p { color:var(--muted); }
+  .from { display:inline-block; margin-top:14px; font-size:13px; padding:4px 10px; border-radius:99px; background:#fff; border:1px solid #ecdccd; }
+  a.btn { display:block; margin-top:22px; padding:15px; border-radius:16px; background:var(--blue); color:#fff; font-weight:600; font-size:17px; text-decoration:none; }
+  a.alt { display:block; margin-top:14px; color:var(--accent); font-weight:600; text-decoration:none; }
+  .preview { margin-top:22px; text-align:left; font-size:13px; color:var(--muted); }
+  .preview div { margin-top:6px; background:#fff; border:1px solid #ecdccd; border-radius:14px; padding:10px 12px; color:var(--ink); white-space:pre-line; font-size:14px; }
+  small { display:block; margin-top:18px; color:var(--muted); font-size:12px; }
 </style>
 </head>
 <body>
-<div class="note"><b>Demo.</b> On a real plush, the scan opens your Messages app with this text ready to send.</div>
-<div class="phone">
-  <div class="top"><div class="avatar">E</div><b>Emora Health</b><div class="to">Text line for <span id="practice"></span></div></div>
-  <div class="thread" id="thread"></div>
-  <div class="compose">
-    <div class="field" id="field"></div>
-    <button class="send" id="send" aria-label="Send">↑</button>
-  </div>
-  <div class="hint" id="hint">Tap send. That's the second tap.</div>
-</div>
-<div class="meta" id="meta" hidden>
-  <b>What Emora receives</b>
-  <table>
-    <tr><td>Parent phone</td><td>From the text (no form)</td></tr>
-    <tr><td>Referring practice</td><td id="m-practice"></td></tr>
-    <tr><td>Practice code</td><td id="m-code"></td></tr>
-    <tr><td>Next step</td><td>SMS matching follow-up</td></tr>
-  </table>
-</div>
+<main>
+  <div class="bear">🧸</div>
+  <h1>Text Emora to get matched</h1>
+  <p>Your message is ready. Just tap send.</p>
+  <span class="from" id="from"></span>
+  <a class="btn" id="sms" href="#">Open Messages</a>
+  <a class="alt" id="web" href="#">No phone handy? Try the text demo on the web →</a>
+  <div class="preview">Your message<div id="body"></div></div>
+  <small>Demo by Alba for Emora. Message and data rates may apply. Reply STOP to opt out.</small>
+</main>
 <script src="/track.js"></script>
 <script>
-  const T = window.EmoraTrack;
-  const id = new URLSearchParams(location.search).get('p') || 'sunny-days';
-  const pr = T.practice(id);
-  const code = id.toUpperCase();
-  const msg = `Hi Emora! ${pr.name} gave us your info. We'd like help finding a therapist for our child. (Ref ${code})`;
-  document.getElementById('practice').textContent = pr.name;
-  document.getElementById('field').textContent = msg;
-  document.getElementById('m-practice').textContent = pr.name;
-  document.getElementById('m-code').textContent = code;
+  const T = window.EmoraTrack, NUMBER = '+12314036672';
+  const q = new URLSearchParams(location.search);
+  const id = T.PRACTICES[q.get('p')] ? q.get('p') : 'sunny-days';
+  const P = T.practice(id), code = Math.random().toString(36).slice(2, 7);
+  const web = `https://emora.lol/chat?p=${id}&c=${code}`;
+  const body = `Hi Emora! ${P.doc} at ${P.name} referred us. We're looking for a therapist for our child.\n(Ref: ${id.toUpperCase()} · chat ${code})\n\nDemo: see what happens next → ${web}`;
+  document.getElementById('from').textContent = `Referred by ${P.doc} · ${P.name}`;
+  document.getElementById('body').textContent = body;
+  const sms = `sms:${NUMBER}${/iPhone|iPad|Macintosh/.test(navigator.userAgent) ? '&' : '?'}body=${encodeURIComponent(body)}`;
+  document.getElementById('sms').href = sms;
+  document.getElementById('web').href = web;
 
-  // Log the scan: which pediatrician's QR, plus coarse visitor context
+  // Log the scan for this pediatrician, then hand off to Messages
   const vis = T.visitor(), ua = T.parseUA();
-  const base = { practice:id, vid:vis.id, returning:vis.returning, ...ua,
-                 lang:navigator.language, tz:Intl.DateTimeFormat().resolvedOptions().timeZone,
-                 sim: new URLSearchParams(location.search).has('sim') };
-  const geoP = T.geo();
-  geoP.then(g => T.publish({ type:'scan', ...base, ...g }));
-  const thread = document.getElementById('thread');
-  const bubble = (text, cls) => { const b = document.createElement('div'); b.className = `bubble ${cls}`; b.textContent = text;
-    thread.appendChild(b); requestAnimationFrame(() => b.classList.add('show')); };
-  const send = document.getElementById('send');
-  send.addEventListener('click', () => {
-    send.disabled = true; document.getElementById('field').textContent = '';
-    geoP.then(g => T.publish({ type:'text', ...base, ...g }));
-    document.getElementById('hint').textContent = 'Sent. Emora now has your number and knows who referred you.';
-    bubble(msg, 'me');
-    setTimeout(() => bubble(`Hi! This is Emora, thanks for reaching out via ${pr.name}. To match your child with the right therapist: how old is your child, and what's been going on?`, 'them'), 1100);
-    setTimeout(() => bubble('Reply anytime. Most families are matched within a few days, and we check your insurance for you.', 'them'), 2600);
-    setTimeout(() => document.getElementById('meta').hidden = false, 3000);
+  const base = { practice:id, vid:vis.id, returning:vis.returning, ...ua, chat:code,
+                 lang:navigator.language, tz:Intl.DateTimeFormat().resolvedOptions().timeZone, sim:q.has('sim') };
+  T.geo().then(g => T.publish({ type:'scan', ...base, ...g })).finally(() => {
+    if (ua.mobile && !q.has('stay')) location.href = sms;
   });
 </script>
 </body>
