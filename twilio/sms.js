@@ -10,7 +10,7 @@ const NTFY = 'https://ntfy.sh';
 const SCANS_TOPIC = 'emora-lol-scans-r7nrny2a';
 
 // One reply: the full intake experience lives on the web demo (works even before carrier approval)
-const link = (ref, code) => `https://emora.lol/chat?p=${ref.toLowerCase() || 'sunny-days'}${code ? `&c=${code}` : ''}`;
+const link = (ref, code) => `https://emora.lol/chat?p=${ref.toLowerCase() || 'sunny-days'}&s=1`;
 const FIRST = (p, url) => `Alba demo for Emora: Thanks for texting! In the real product, Emora's coordinator would reply here about your referral from ${p}. Try the full conversation: ${url} Reply STOP to opt out.`;
 const LATER = url => `Alba demo for Emora: this is a demo line. Continue the conversation here: ${url}`;
 
@@ -37,11 +37,12 @@ exports.handler = async function (context, event, callback) {
 
     twiml.message(reply);
     const now = Date.now();
-    if (code) {
-      await post(`emora-lol-chat-${code}`, { dir: 'in', text: body, from: masked, ts: now });
-      await post(`emora-lol-chat-${code}`, { dir: 'out', text: reply, ts: now + 1 });
+    const pid = ref.toLowerCase();
+    if (pid) await post(`emora-lol-chat-${pid}`, { dir: 'in', text: body, from: masked, ts: now });
+    if (turn === 0) {
+      // The scan itself is logged by emora.lol/scan; this records that the real text arrived.
+      await post(SCANS_TOPIC, { type: 'text', sms: true, practice: pid, from: masked });
     }
-    if (turn === 0) await post(SCANS_TOPIC, { type: 'text', sms: true, practice: ref.toLowerCase(), from: masked, chat: code });
   } catch (err) {
     console.error(err);
     twiml.message(LATER('https://emora.lol/chat'));

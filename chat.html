@@ -190,7 +190,7 @@ async function run() {
     <div class="bd" style="padding-top:8px">${esc(kid)} with <b>${T1.name}</b><br>${slot} · ${mode === 'In person' ? `In person, ${city}` : 'Video'}<br>
     ${ins === 'Self-pay' ? 'Self-pay' : `${ins} · in network`}</div>
     <div class="ft"><span>Intake form sent</span><b>Add to calendar</b></div>`));
-  if (q.get('c')) T.publish({ type:'booked', practice:pid, chat:code });  // only real scan → text → web journeys
+  if (q.get('c') || q.has('s')) T.publish({ type:'booked', practice:pid, chat:code });  // only real scan → text → web journeys
   await sleep(500);
   await them(`You're all set! I've texted you a short intake form (5 min). Can we let ${P.doc} know ${kid} is connected to care?`);
   const loop = await choose([`Yes, let ${P.doc.split(' ')[1]} know`, 'No thanks']);
@@ -208,8 +208,8 @@ async function run() {
 run();
 
 // If the parent's real text reaches the Twilio line, show it
-if (q.get('c')) {
-  try { const es = new EventSource(`https://ntfy.sh/emora-lol-chat-${encodeURIComponent(code)}/sse?since=1h`);
+if (q.has('s') || q.get('c')) {
+  try { const es = new EventSource(`https://ntfy.sh/emora-lol-chat-${encodeURIComponent(pid)}/sse?since=3m`);
         es.onmessage = e => { try { const m = JSON.parse(JSON.parse(e.data).message); if (m.dir === 'in') document.getElementById('banner').style.display = 'block'; } catch {} }; } catch {}
 }
 </script>

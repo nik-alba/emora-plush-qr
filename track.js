@@ -12,6 +12,11 @@ window.EmoraTrack = (() => {
   };
   const practice = id => PRACTICES[id] || { name: id || 'Unknown practice', doc:'', city:'', color:'#999' };
   const scanUrl = id => `${location.protocol.startsWith('http') ? location.origin : 'https://emora.lol'}/scan?p=${id}`;
+  // The QR is an SMS code: the phone camera opens Messages directly (no browser, no "Open?" prompt).
+  // Attribution comes from the Ref in the text; Twilio logs it when it arrives.
+  const NUMBER = '+12314036672';
+  const smsBody = id => `Hi Emora! ${practice(id).doc} at ${practice(id).name} referred us. (Ref: ${id.toUpperCase()})\nDemo: emora.lol/chat?p=${id}&s=1`;
+  const smsQR = id => `SMSTO:${NUMBER}:${smsBody(id)}`;
 
   function visitor() {
     let id = null, returning = false;
@@ -78,5 +83,5 @@ window.EmoraTrack = (() => {
     return es;
   }
 
-  return { PRACTICES, practice, scanUrl, visitor, parseUA, geo, publish, subscribe };
+  return { PRACTICES, practice, scanUrl, NUMBER, smsBody, smsQR, visitor, parseUA, geo, publish, subscribe };
 })();
