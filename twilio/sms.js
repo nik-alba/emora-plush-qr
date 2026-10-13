@@ -11,8 +11,8 @@ const SCANS_TOPIC = 'emora-lol-scans-jlilk0n3';
 
 // One reply: the full intake experience lives on the web demo (works even before carrier approval)
 const link = (ref, code) => `https://emora.lol/chat?p=${ref.toLowerCase() || 'sunny-days'}&s=1`;
-const FIRST = (p, url) => `Alba demo for Emora: Thanks for texting! In the real product, Emora's coordinator would reply here about your referral from ${p}. Try the full conversation: ${url} Reply STOP to opt out.`;
-const LATER = url => `Alba demo for Emora: this is a demo line. Continue the conversation here: ${url}`;
+const FIRST = (p, url) => `Emora demo by Alba: Thanks for texting! This is a demo, so please don't share real health details. In the real product, Emora's coordinator would reply here about your referral from ${p}. Try the full conversation: ${url} Msg & data rates may apply. Reply STOP to opt out, HELP for help.`;
+const LATER = url => `Emora demo by Alba: this is a demo line. Continue the conversation here: ${url} Reply STOP to opt out, HELP for help.`;
 
 const post = (topic, obj) => fetch(`${NTFY}/${topic}`, { method: 'POST', body: JSON.stringify(obj) }).catch(() => {});
 
