@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Emora · Text to Match</title>
+<title>Emora demo · Text to get matched</title>
 <style>
   :root { --bg:#fbf4ec; --ink:#2b2320; --muted:#7a6a62; --accent:#e0795a; --blue:#0a84ff; }
   * { box-sizing:border-box; margin:0; }
@@ -15,10 +15,14 @@
   h1 { font-size:24px; margin:8px 0 6px; }
   p { color:var(--muted); }
   .from { display:inline-block; margin-top:14px; font-size:13px; padding:4px 10px; border-radius:99px; background:#fff; border:1px solid #ecdccd; }
-  a.btn { display:block; margin-top:22px; padding:15px; border-radius:16px; background:var(--blue); color:#fff; font-weight:600; font-size:17px; text-decoration:none; }
-  a.alt { display:block; margin-top:14px; color:var(--accent); font-weight:600; text-decoration:none; }
-  .preview { margin-top:22px; text-align:left; font-size:13px; color:var(--muted); }
+  .demo { display:inline-block; margin:14px 4px 0; font-size:13px; padding:4px 10px; border-radius:99px; background:#fff3ec; border:1px solid #f0c9b8; color:#9a4b31; font-weight:600; }
+  .preview { margin-top:20px; text-align:left; font-size:13px; color:var(--muted); }
   .preview div { margin-top:6px; background:#fff; border:1px solid #ecdccd; border-radius:14px; padding:10px 12px; color:var(--ink); white-space:pre-line; font-size:14px; }
+  .consent { margin-top:18px; text-align:left; background:#fff; border:1px solid #ecdccd; border-radius:14px; padding:12px 14px; font-size:13.5px; line-height:1.5; color:var(--ink); }
+  .consent b { color:var(--ink); }
+  .consent a { color:var(--accent); font-weight:600; }
+  a.btn { display:block; margin-top:14px; padding:15px; border-radius:16px; background:var(--blue); color:#fff; font-weight:600; font-size:17px; text-decoration:none; }
+  a.alt { display:block; margin-top:14px; color:var(--accent); font-weight:600; text-decoration:none; }
   small { display:block; margin-top:18px; color:var(--muted); font-size:12px; }
   small a { color:var(--accent); }
 </style>
@@ -27,12 +31,23 @@
 <main>
   <div class="bear">🧸</div>
   <h1>Text Emora to get matched</h1>
-  <p>Your message is ready. Just tap send.</p>
+  <p>Your message is written for you. Review it, then tap send in Messages.</p>
   <span class="from" id="from"></span>
+  <span class="demo">Product demo by Alba</span>
+  <div class="preview">Your message<div id="body"></div></div>
+
+  <div class="consent" id="consent">
+    <b>Before you text:</b> this is a product demo run by Alba (alba.cc), not a live Emora Health service.
+    By tapping <b>Open Messages</b> and sending the text above, you agree to receive demo text messages from Alba at <b>(231) 403-6672</b>.
+    Replies are sent only in answer to your texts. Message frequency varies, up to 15 messages per conversation.
+    Msg &amp; data rates may apply. Reply <b>STOP</b> to cancel at any time, <b>HELP</b> for help.
+    Please do not send real health information.
+    <a href="/privacy">Privacy Policy</a> · <a href="/terms">Messaging Terms</a>
+  </div>
+
   <a class="btn" id="sms" href="#">Open Messages</a>
   <a class="alt" id="web" href="#">No phone handy? Try the text demo on the web →</a>
-  <div class="preview">Your message<div id="body"></div></div>
-  <small>This is a product demo run by Alba, not a live Emora service. By sending this text you agree to receive demo replies from Alba at (231) 403-6672. Replies come only in answer to your texts, up to about 15 per conversation. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help. <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></small>
+  <small>Questions? Email <a href="mailto:nik@alba.cc">nik@alba.cc</a>. Sunny Days Pediatrics, Lone Star Kids Clinic and Coral Bay Pediatrics are fictional practices used for this demo.</small>
 </main>
 <script src="/track.js"></script>
 <script>
@@ -48,13 +63,12 @@
   document.getElementById('sms').href = sms;
   document.getElementById('web').href = web;
 
-  // Log the scan for this pediatrician, then hand off to Messages
+  // Log the scan for this pediatrician. The hand-off to Messages is never automatic:
+  // the person reads the consent notice above, taps "Open Messages", then taps send.
   const vis = T.visitor(), ua = T.parseUA();
   const base = { practice:id, vid:vis.id, returning:vis.returning, ...ua, chat:code,
                  lang:navigator.language, tz:Intl.DateTimeFormat().resolvedOptions().timeZone, sim:q.has('sim') };
-  T.geo().then(g => T.publish({ type:'scan', ...base, ...g })).finally(() => {
-    if (ua.mobile && !q.has('stay')) location.href = sms;
-  });
+  T.geo().then(g => T.publish({ type:'scan', ...base, ...g }));
 </script>
 </body>
 </html>

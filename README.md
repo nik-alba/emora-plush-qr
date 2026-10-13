@@ -13,7 +13,7 @@ Live at **https://emora.lol**. Built by Alba (Nik) for the Emora team.
 | File | What it is |
 |---|---|
 | `index.html` | The bear page: Three.js scene (bear, team looks, office, QR), live scan log, easter-egg care buttons |
-| `scan.html` | Where the QR goes. Logs the scan, then opens Messages pre-filled to the demo number |
+| `scan.html` | Where the QR goes. Logs the scan, shows the SMS consent notice, and opens Messages pre-filled on tap (no auto-redirect: carriers require an explicit opt-in) |
 | `chat.html` | Web version of the text conversation (referral → trust → intake → matches → booking) |
 | `track.js` | Shared: the 3 demo practices, device/location lookup, the live event feed |
 | `assets/` | Emora logo files (from emorahealth.com) |
