@@ -273,6 +273,9 @@ const LOOKS = {
            grin:true, top:'shirt', topColor:0xa9cde3, plaid:['#a9cde3', '#5f8fb3'] },
   robin: { label:'Robin', hair:0x15100e, style:'curls', iris:0x3a2a1c, brow:0x15100e, grin:true, glasses:0x6f8496,
            top:'polo', topColor:0xd8231c },
+  // Nik: placeholder look until Nik confirms hair / facial hair / glasses / go-to top
+  nik:   { label:'Nik', hair:0x4a3326, style:'short', iris:0x4f6b3a, brow:0x3e2b20, stubble:0x4a3828, stubbleD:0.45,
+           grin:true, top:'sweater', topColor:0x2f5d50 },
 };
 
 const look = new THREE.Group(); neck.add(look);
@@ -335,6 +338,11 @@ function applyLookBase(name) {
       tuft(hairMat, p, new THREE.Vector3(Math.sin(az)*0.3, 0.6, -1), 0.12, 2.0);
     }
     tuft(hairMat, headPt(0.15, 1.15, 1.02), new THREE.Vector3(0.3, 1, 0.2), 0.07, 2.4);
+  } else if (L.style === 'short') {   // Nik: short and neat, a little texture at the front
+    for (let i=0;i<7;i++){
+      const az = -0.6 + i*0.2, p = headPt(az, 0.86 + Math.sin(i*2.3)*0.04, 1.0);
+      tuft(hairMat, p, new THREE.Vector3(Math.sin(az)*0.4, 1, 0.55), 0.1, 1.5);
+    }
   } else if (L.style === 'curls') {   // Robin: big curly volume all round
     const rnd = (i) => (Math.sin(i*12.9898)*43758.5453) % 1;
     for (let i=0;i<140;i++){
@@ -444,7 +452,7 @@ const qrMesh = new THREE.Mesh(bentPlane(PATCH, PATCH, 0.052),
   new THREE.MeshStandardMaterial({ map:qrTex, roughness:0.9 }));
 bodyPivot.add(qrMesh);
 
-// Look toggle: Bear / Zach / Ed / Robin
+// Look toggle: Bear / Zach / Ed / Robin / Nik
 {
   const bar = document.getElementById('looks'); bar.hidden = false;
   const caption = document.getElementById('caption');

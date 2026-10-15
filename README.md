@@ -14,6 +14,8 @@ Live at **https://emora.lol**. Built by Alba (Nik) for the Emora team.
 |---|---|
 | `index.html` | The bear page: Three.js scene (bear, team looks, office, QR), live scan log, easter-egg care buttons |
 | `scan.html` | Where the QR goes. Logs the scan, shows the SMS consent notice, and opens Messages pre-filled on tap (no auto-redirect: carriers require an explicit opt-in) |
+| `starship.html` | emora.lol/starship: joke "Emora Starship" page. Earth with the team bears orbiting as satellites |
+| `bear-kit.js` | Bear builder used by the starship page (a copy of the bear + looks from `index.html`; keep looks in sync) |
 | `chat.html` | Web version of the text conversation (referral → trust → intake → matches → booking) |
 | `track.js` | Shared: the 3 demo practices, device/location lookup, the live event feed |
 | `assets/` | Emora logo files (from emorahealth.com) |
@@ -22,7 +24,7 @@ Live at **https://emora.lol**. Built by Alba (Nik) for the Emora team.
 ## URL options
 | Param | Effect |
 |---|---|
-| `?team=robin` | Opens on a team bear: `bear`, `zach`, `ed`, `robin` |
+| `?team=robin` | Opens on a team bear: `bear`, `zach`, `ed`, `robin`, `nik` |
 | `?care` | Shows the Feed / Water / Hug / Nap / Hair buttons (otherwise: tap the bear 3 times, or the faint 🐾) |
 | `?p=lone-star` | Referring office: `sunny-days` (default), `lone-star`, `coral-bay` |
 

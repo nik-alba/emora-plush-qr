@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emora Starship · Family therapy in orbit</title>
+<meta name="description" content="A joke. Emora Starship: family therapy in low Earth orbit, with the Emora Starlink constellation of plush bears.">
+<meta name="robots" content="noindex">
+<style>
+  :root { --ink:#fff8f0; --muted:#b9b0c8; --accent:#e0795a; --glass:rgba(20,16,38,.62); --line:rgba(255,255,255,.14); }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#07061a; color:var(--ink);
+    font:16px/1.45 ui-rounded, "SF Pro Rounded", system-ui, -apple-system, sans-serif; }
+  #stage { position:fixed; inset:0; }
+  #stage canvas { display:block; touch-action:none; }
+  button { font:inherit; color:inherit; cursor:pointer; }
+
+  #hero { position:fixed; left:clamp(16px, 5vw, 72px); top:clamp(16px, 9vh, 96px); width:min(440px, calc(100% - 32px)); z-index:2; pointer-events:none; }
+  #hero > * { pointer-events:auto; }
+  .brand { display:flex; align-items:center; gap:10px; }
+  .brand img { height:22px; filter:brightness(0) invert(1); }
+  .badge { font-size:12px; letter-spacing:.12em; text-transform:uppercase; border:1px solid var(--line); border-radius:99px; padding:3px 10px; color:var(--muted); }
+  h1 { font-size:clamp(34px, 5.2vw, 62px); line-height:1.02; margin:22px 0 14px; letter-spacing:-.02em; }
+  h1 em { font-style:normal; color:var(--accent); }
+  .lede { color:#ded6ea; font-size:clamp(15px, 1.4vw, 18px); margin:0 0 22px; max-width:400px; }
+  .ctas { display:flex; gap:10px; flex-wrap:wrap; }
+  .btn { border:0; border-radius:99px; padding:12px 20px; font-weight:700; background:var(--accent); color:#fff;
+    box-shadow:0 8px 30px rgba(224,121,90,.35); transition:transform .15s; }
+  .btn:hover { transform:translateY(-2px); }
+  .btn.ghost { background:rgba(255,255,255,.08); box-shadow:none; border:1px solid var(--line); }
+  .facts { list-style:none; padding:0; margin:28px 0 0; display:grid; gap:8px; color:var(--muted); font-size:14px; }
+  .facts b { color:var(--ink); }
+
+  #crew { position:fixed; right:clamp(16px, 4vw, 56px); bottom:clamp(14px, 4vh, 34px); z-index:2;
+    background:var(--glass); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid var(--line);
+    border-radius:20px; padding:10px 12px; display:flex; align-items:center; gap:10px; max-width:calc(100% - 32px); }
+  #crew .lbl { font-size:12px; color:var(--muted); line-height:1.25; padding:0 6px; white-space:nowrap; }
+  #crew .lbl b { display:block; color:var(--ink); font-size:13px; }
+  #crew nav { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+  #crew nav button { border:1px solid var(--line); background:rgba(255,255,255,.06); border-radius:99px; padding:7px 13px; font-size:14px; font-weight:600; }
+  #crew nav button[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); }
+  #crew nav button i { font-style:normal; display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; background:var(--c); }
+
+  #card { position:fixed; right:clamp(16px, 4vw, 56px); top:50%; transform:translate(30px,-50%); opacity:0; pointer-events:none; z-index:3;
+    width:min(320px, calc(100% - 32px)); background:var(--glass); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    border:1px solid var(--line); border-radius:22px; padding:20px; transition:opacity .35s, transform .35s; }
+  #card.show { opacity:1; transform:translate(0,-50%); pointer-events:auto; }
+  #card .role { font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); font-weight:700; }
+  #card h2 { margin:4px 0 10px; font-size:26px; }
+  #card p { margin:0 0 14px; color:#ded6ea; font-size:15px; }
+  #card dl { display:grid; grid-template-columns:auto 1fr; gap:4px 14px; margin:0 0 16px; font-size:13px; }
+  #card dt { color:var(--muted); } #card dd { margin:0; font-variant-numeric:tabular-nums; }
+
+  .tag3d { position:fixed; left:0; top:0; z-index:1; pointer-events:auto; cursor:pointer; white-space:nowrap;
+    font-size:12px; font-weight:700; padding:3px 9px; border-radius:99px; background:rgba(10,8,26,.7); border:1px solid var(--line);
+    transition:opacity .25s; will-change:transform; }
+  .tag3d::before { content:""; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--c); margin-right:6px; vertical-align:1px; }
+
+  #ticker { position:fixed; right:clamp(16px, 4vw, 56px); top:clamp(16px, 4vh, 34px); z-index:2; text-align:right; font-size:12px; color:var(--muted);
+    font-variant-numeric:tabular-nums; line-height:1.6; }
+  #ticker b { color:var(--ink); }
+  #ticker .live { display:inline-block; width:7px; height:7px; border-radius:50%; background:#4ade80; margin-right:6px; animation:pulse 1.6s infinite; }
+  @keyframes pulse { 50% { opacity:.3; } }
+
+  #fine { margin:22px 0 0; font-size:12px; color:#8c84a0; max-width:320px; }
+  #fine a { color:#b9b0c8; }
+
+  #modal { position:fixed; inset:0; z-index:10; display:grid; place-items:center; background:rgba(5,4,16,.6); backdrop-filter:blur(6px);
+    opacity:0; pointer-events:none; transition:opacity .25s; padding:16px; }
+  #modal.show { opacity:1; pointer-events:auto; }
+  #modal .sheet { width:min(420px, 100%); background:#151231; border:1px solid var(--line); border-radius:24px; padding:24px; }
+  #modal h3 { margin:0 0 6px; font-size:22px; }
+  #modal p { color:#ded6ea; margin:0 0 16px; font-size:15px; }
+  .slots { display:grid; gap:8px; margin-bottom:18px; }
+  .slots button { text-align:left; border:1px solid var(--line); background:rgba(255,255,255,.05); border-radius:14px; padding:11px 14px; }
+  .slots button small { display:block; color:var(--muted); }
+  .slots button[aria-pressed="true"] { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; }
+  .row-end { display:flex; gap:10px; justify-content:flex-end; }
+  #countdown { font-size:40px; font-weight:800; text-align:center; margin:6px 0 12px; font-variant-numeric:tabular-nums; color:var(--accent); }
+
+  @media (max-width: 760px) {
+    #hero { top:14px; }
+    h1 { margin:14px 0 8px; }
+    .lede { font-size:14px; margin-bottom:14px; }
+    .facts, #ticker { display:none; }
+    #fine { margin-top:10px; font-size:11px; }
+    .btn { padding:10px 16px; font-size:14px; }
+    #crew { left:16px; right:16px; flex-direction:column; align-items:stretch; gap:6px; padding:8px; max-width:none; }
+    #crew .lbl { text-align:center; }
+    #crew .lbl b { display:inline; } #crew .lbl b::after { content:' · '; color:var(--muted); }
+    #crew nav { flex-wrap:nowrap; } #crew nav button { padding:6px 10px; font-size:13px; } #crew nav button i { display:none; }
+    #crew nav { justify-content:center; }
+    #card { top:auto; bottom:132px; transform:translate(0,20px); left:16px; right:16px; width:auto; padding:16px; }
+    #card.show { transform:translate(0,0); }
+    #card dl { display:none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .btn, #card, .tag3d { transition:none; } }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<section id="hero">
+  <div class="brand"><img src="/assets/emora-logo-h.svg" alt="Emora"><span class="badge">Starship</span></div>
+  <h1>Family therapy,<br><em>in orbit.</em></h1>
+  <p class="lede">Emora Starship takes your whole family 408 km up. It is very hard to stay mad at your sister when the entire planet is out the window.</p>
+  <div class="ctas">
+    <button class="btn" id="book">Book a launch window</button>
+    <button class="btn ghost" id="meet">Meet the crew</button>
+  </div>
+  <ul class="facts">
+    <li><b>16 sunrises</b> per session. Every orbit is a fresh start.</li>
+    <li><b>Zero gravity.</b> Nobody can storm off to their room.</li>
+    <li><b>Starlink-grade check-ins</b> from a constellation of licensed-ish bears.</li>
+  </ul>
+  <p id="fine">A joke. Emora does real therapy for kids and families, here on Earth: <a href="https://emorahealth.com" rel="noopener">emorahealth.com</a>. The bears are plush.</p>
+</section>
+
+<div id="ticker"><span class="live"></span><b>Starship One</b> · session in progress<br>Orbit <b id="orbitN">1,204</b> · Altitude <b id="alt">408</b> km<br>Next sunrise in <b id="sunrise">--:--</b></div>
+
+<aside id="card" aria-live="polite">
+  <div class="role" id="cRole"></div>
+  <h2 id="cName"></h2>
+  <p id="cBio"></p>
+  <dl id="cStats"></dl>
+  <button class="btn ghost" id="back">Back to orbit</button>
+</aside>
+
+<div id="crew">
+  <div class="lbl"><b>Emora Starlink</b>5 objects in orbit</div>
+  <nav id="crewNav" aria-label="Follow a crew member"></nav>
+</div>
+
+
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { makeSatelliteBear, plush, canvasTex } from '/bear-kit.js';
+
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x07061a);
+const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 400);
+camera.position.set(4, 4.5, 17); scene.add(camera);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.06; controls.enablePan = false;
+controls.minDistance = 8; controls.maxDistance = 32; controls.autoRotate = !REDUCED; controls.autoRotateSpeed = 0.35;
+controls.rotateSpeed = 0.6;
+
+// Lights: a warm sun, a cool space fill, and a soft light that rides with the camera so faces stay readable
+const sun = new THREE.DirectionalLight(0xfff1e0, 3.0); sun.position.set(11, 4, 3); scene.add(sun);
+scene.add(new THREE.HemisphereLight(0x9cc0ff, 0x241a3a, 0.55));
+const camFill = new THREE.DirectionalLight(0xffe2d0, 0.7); camFill.position.set(0, 1, 1); camera.add(camFill);
+
+// ---------- Stars ----------
+function starLayer(n, r, size, opacity) {
+  const pos = new Float32Array(n*3), col = new Float32Array(n*3);
+  for (let i=0;i<n;i++){
+    const u = Math.random()*2-1, a = Math.random()*Math.PI*2, s = Math.sqrt(1-u*u), rr = r*(0.8+Math.random()*0.4);
+    pos.set([Math.cos(a)*s*rr, u*rr, Math.sin(a)*s*rr], i*3);
+    const tint = Math.random(); col.set(tint < .15 ? [1,.85,.7] : tint < .3 ? [.75,.85,1] : [1,1,1], i*3);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  return new THREE.Points(g, new THREE.PointsMaterial({ size, sizeAttenuation:false, vertexColors:true, transparent:true, opacity, depthWrite:false }));
+}
+const stars = new THREE.Group(); scene.add(stars);
+stars.add(starLayer(2600, 160, 1.2, .7), starLayer(500, 150, 2.2, .9), starLayer(60, 140, 3.4, 1));
+
+// ---------- A felt Earth ----------
+const hash = (x,y,z) => { const h = Math.sin(x*127.1 + y*311.7 + z*74.7) * 43758.5453; return h - Math.floor(h); };
+const fade = t => t*t*(3-2*t);
+function vnoise(x,y,z) {
+  const xi=Math.floor(x), yi=Math.floor(y), zi=Math.floor(z), xf=fade(x-xi), yf=fade(y-yi), zf=fade(z-zi);
+  const L=(a,b,t)=>a+(b-a)*t;
+  return L(L(L(hash(xi,yi,zi),hash(xi+1,yi,zi),xf), L(hash(xi,yi+1,zi),hash(xi+1,yi+1,zi),xf), yf),
+           L(L(hash(xi,yi,zi+1),hash(xi+1,yi,zi+1),xf), L(hash(xi,yi+1,zi+1),hash(xi+1,yi+1,zi+1),xf), yf), zf);
+}
+function fbm(x,y,z,oct=5){ let a=0.5, f=1, s=0, n=0; for(let i=0;i<oct;i++){ s+=a*vnoise(x*f,y*f,z*f); n+=a; a*=0.5; f*=2.03; } return s/n; }
+function sphereField(W, H, fn) {
+  const out = new Float32Array(W*H);
+  for (let y=0;y<H;y++){ const lat = Math.PI/2 - (y+.5)/H*Math.PI, cl = Math.cos(lat), sl = Math.sin(lat);
+    for (let x=0;x<W;x++){ const lon = (x+.5)/W*Math.PI*2 - Math.PI; out[y*W+x] = fn(cl*Math.cos(lon), sl, cl*Math.sin(lon), lat); } }
+  return out;
+}
+const EW = 1024, EH = 512, SEA = 0.535;
+const land = sphereField(EW, EH, (x,y,z) => fbm(x*1.7+3.1, y*1.7+1.3, z*1.7+7.7, 6));
+const earthTex = canvasTex(EW, EH, (g, w, h) => {
+  const img = g.createImageData(w, h), d = img.data;
+  for (let y=0;y<h;y++) for (let x=0;x<w;x++){
+    const i = y*w+x, n = land[i], lat = Math.abs(Math.PI/2 - (y+.5)/h*Math.PI);
+    let c;
+    if (n < SEA) { const k = Math.max(0, Math.min(1, (n - (SEA-.12))/.12)); c = [24+k*50, 70+k*80, 150+k*60]; }
+    else if (n < SEA+.025) c = [233, 214, 160];      // beaches
+    else if (n < SEA+.08) c = [112, 186, 104];
+    else if (n < SEA+.13) c = [84, 156, 86];
+    else c = [176, 150, 112];
+    if (lat > 1.22 + (n-.5)*.5) c = [244, 248, 252];                            // ice caps
+    if (n >= SEA && n < SEA+.006 && ((x>>1)+(y>>1)) % 3 === 0) c = [255, 246, 228]; // stitched coastline
+    d[i*4]=c[0]; d[i*4+1]=c[1]; d[i*4+2]=c[2]; d[i*4+3]=255;
+  }
+  g.putImageData(img, 0, 0);
+});
+earthTex.wrapT = THREE.ClampToEdgeWrapping;
+const feltBump = canvasTex(512, 256, (g, w, h) => {
+  g.fillStyle = '#808080'; g.fillRect(0,0,w,h);
+  for (let i=0;i<26000;i++){ const v = Math.random() > .5 ? 255 : 0; g.fillStyle = `rgba(${v},${v},${v},${.08+Math.random()*.1})`;
+    g.fillRect(Math.random()*w, Math.random()*h, 1+Math.random()*1.5, 1+Math.random()*3); }
+}, [6, 3]);
+const EARTH_R = 3;
+const earth = new THREE.Group(); scene.add(earth);
+earth.rotation.z = 0.41; // axial tilt
+const globe = new THREE.Mesh(new THREE.SphereGeometry(EARTH_R, 128, 96), new THREE.MeshPhysicalMaterial({
+  map:earthTex, bumpMap:feltBump, bumpScale:1.2, roughness:0.95, sheen:0.5, sheenRoughness:0.8, sheenColor:new THREE.Color(0x3a5a80) }));
+earth.add(globe);
+const cloudField = sphereField(512, 256, (x,y,z) => fbm(x*2.6+11, y*3.4+5, z*2.6+2, 5));
+const cloudTex = canvasTex(512, 256, (g, w, h) => {
+  const img = g.createImageData(w, h), d = img.data;
+  for (let i=0;i<w*h;i++){ const a = Math.max(0, Math.min(1, (cloudField[i]-.6)/.08)); d[i*4]=d[i*4+1]=d[i*4+2]=255; d[i*4+3]=a*215; }
+  g.putImageData(img, 0, 0);
+});
+const clouds = new THREE.Mesh(new THREE.SphereGeometry(EARTH_R*1.025, 96, 64),
+  new THREE.MeshStandardMaterial({ map:cloudTex, transparent:true, depthWrite:false, roughness:1 }));
+earth.add(clouds);
+// Atmosphere glow
+const atmo = new THREE.Mesh(new THREE.SphereGeometry(EARTH_R*1.17, 96, 64), new THREE.ShaderMaterial({
+  side:THREE.BackSide, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false,
+  vertexShader:`varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix*vec4(position,1.); vN = normalize(normalMatrix*normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }`,
+  fragmentShader:`varying vec3 vN; varying vec3 vV; void main(){ float i = pow(clamp(0.72 + dot(vN, vV), 0., 1.), 3.2); gl_FragColor = vec4(0.42, 0.68, 1.0, 1.0) * i * 1.4; }`
+}));
+scene.add(atmo);
+const rimGlow = new THREE.Mesh(new THREE.SphereGeometry(EARTH_R*1.005, 96, 64), new THREE.ShaderMaterial({
+  transparent:true, blending:THREE.AdditiveBlending, depthWrite:false,
+  vertexShader:`varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix*vec4(position,1.); vN = normalize(normalMatrix*normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }`,
+  fragmentShader:`varying vec3 vN; varying vec3 vV; void main(){ float f = pow(1. - max(dot(vN, vV), 0.), 2.6); gl_FragColor = vec4(0.5, 0.75, 1.0, 1.0) * f * .9; }`
+}));
+scene.add(rimGlow);
+
+// ---------- The crew ----------
+const CREW = [
+  { key:'ed', name:'Edbear', role:'Mission Commander', color:'#7cb7e8', r:5.0, incl:0.35, node:0.0, speed:0.16, phase:0.4,
+    bio:'Ends every orbit with "how did that land for everyone?" Has never let a family session finish on a cliffhanger.',
+    stats:[['Orbit','LEO, 51.6°'],['Sessions led','2,817'],['Snack','Freeze-dried cookie']] },
+  { key:'zach', name:'Zachbear', role:'Flight Director', color:'#c9a46a', r:5.7, incl:-0.55, node:1.3, speed:0.13, phase:2.2,
+    bio:'Runs the launch checklist. Item 1: phones in airplane mode. Item 2: no, actually in airplane mode.',
+    stats:[['Orbit','Sun-synchronous'],['Launches','47'],['Hair','Unaffected by zero g']] },
+  { key:'robin', name:'Robinbear', role:'Chief Science Officer', color:'#e65a4f', r:6.4, incl:0.85, node:2.5, speed:0.11, phase:4.1,
+    bio:'Proved that ramen tastes better in microgravity because the noodles float into your mouth. Peer review pending.',
+    stats:[['Orbit','Polar'],['Bowls in orbit','1 (always)'],['Curls','Fully pressurised']] },
+  { key:'nik', name:'Nikbear', role:'Navigator', color:'#5fb58c', r:7.1, incl:-0.18, node:3.6, speed:0.095, phase:1.1,
+    bio:'Ranks #1 for "therapist near me" from 408 km up. Technically, everyone on Earth is near him.',
+    stats:[['Orbit','Highest in the fleet'],['Keywords tracked','All of them'],['Search volume','Astronomical']] },
+];
+const SHIP = { key:'ship', name:'Starship One', role:'Family session in progress', color:'#e0795a', r:4.25, incl:0.12, node:0.7, speed:0.21, phase:5.4,
+  bio:'The Hendersons, minute 47 of 50. Today\'s topic: who left the airlock open. Progress is being made.',
+  stats:[['Crew','2 parents, 2 kids, 1 therapist'],['Snacks','Rationed fairly, finally'],['Window seat','Shared']] };
+
+function orbitRing(r, color) {
+  const pts = []; for (let i=0;i<=256;i++){ const a = i/256*Math.PI*2; pts.push(new THREE.Vector3(Math.cos(a)*r, 0, Math.sin(a)*r)); }
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineDashedMaterial({ color, dashSize:0.18, gapSize:0.14, transparent:true, opacity:0.32, depthWrite:false }));
+  line.computeLineDistances(); return line;
+}
+function addOrbit(o, obj, scale) {
+  const plane = new THREE.Group(); plane.rotation.set(o.incl, o.node, 0, 'YXZ'); scene.add(plane);
+  plane.add(orbitRing(o.r, o.color));
+  const carrier = new THREE.Group(); plane.add(carrier);
+  obj.scale.setScalar(scale); carrier.add(obj);
+  obj.traverse(m => m.userData.key = o.key);
+  Object.assign(o, { plane, carrier, obj, angle:o.phase });
+}
+
+// Robin's ramen, floating next to her helmet
+function ramen() {
+  const g = new THREE.Group();
+  const prof = []; for (let i=0;i<=12;i++){ const a=i/12*Math.PI/2; prof.push(new THREE.Vector2(0.06+Math.sin(a)*0.26, -0.22+(1-Math.cos(a))*0.22)); }
+  g.add(new THREE.Mesh(new THREE.LatheGeometry(prof, 40), new THREE.MeshStandardMaterial({ color:0xc8342b, roughness:0.35, side:THREE.DoubleSide })));
+  const broth = new THREE.Mesh(new THREE.CircleGeometry(0.3, 32), new THREE.MeshStandardMaterial({ color:0xd98a3d, roughness:0.25 }));
+  broth.rotation.x = -Math.PI/2; broth.position.y = -0.03; g.add(broth);
+  const nMat = new THREE.MeshStandardMaterial({ color:0xf3d27a, roughness:0.5 });
+  for (let i=0;i<7;i++){ // noodles drifting up out of the bowl
+    const t = new THREE.Mesh(new THREE.TorusGeometry(0.05+(i%3)*0.015, 0.012, 8, 20, Math.PI*1.5), nMat);
+    t.position.set(Math.cos(i*2.1)*0.1, 0.05 + i*0.07, Math.sin(i*2.1)*0.08); t.rotation.set(i, i*0.7, 0); g.add(t);
+  }
+  return g;
+}
+
+// Starship One: a capsule with a lit window full of family silhouettes
+function makeShip() {
+  const g = new THREE.Group();
+  const white = new THREE.MeshStandardMaterial({ color:0xf4f1ec, roughness:0.45, metalness:0.2 });
+  const hull = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 2.4, 48), white); hull.rotation.z = Math.PI/2; g.add(hull);
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.75, 48, 24, 0, Math.PI*2, 0, Math.PI/2), white);
+  nose.rotation.z = -Math.PI/2; nose.position.x = 1.2; nose.scale.y = 1.4; g.add(nose);
+  const engine = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.62, 0.5, 32), new THREE.MeshStandardMaterial({ color:0x8a8f99, metalness:0.8, roughness:0.35 }));
+  engine.rotation.z = Math.PI/2; engine.position.x = -1.45; g.add(engine);
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.34, 1.1, 24), new THREE.MeshBasicMaterial({ color:0xffb36b, transparent:true, opacity:0.75, blending:THREE.AdditiveBlending, depthWrite:false }));
+  flame.rotation.z = Math.PI/2; flame.position.x = -2.2; g.add(flame);
+  const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.765, 0.765, 0.18, 48), new THREE.MeshStandardMaterial({ color:0xe0795a, roughness:0.5 }));
+  stripe.rotation.z = Math.PI/2; stripe.position.x = 0.75; g.add(stripe);
+  const winTex = canvasTex(512, 160, (c, w, h) => {
+    const grd = c.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, '#ffe7b8'); grd.addColorStop(1, '#ffc27a');
+    c.fillStyle = grd; c.beginPath(); c.roundRect(0, 0, w, h, 70); c.fill();
+    c.fillStyle = '#7a3f2a'; c.fillRect(30, 118, w-60, 24);                 // the couch
+    c.fillStyle = '#5a2c1e';
+    [[110, 64, 26],[180, 70, 24],[262, 92, 16],[318, 96, 14],[420, 72, 24]].forEach(([x, y, r]) => { // heads + shoulders
+      c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.beginPath(); c.ellipse(x, y + r + 22, r*1.4, 26, 0, Math.PI, 0); c.fill(); });
+    c.font = '700 34px system-ui'; c.fillText('♥', 214, 40);                  // a heart floats by
+  });
+  const win = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.47), new THREE.MeshBasicMaterial({ map:winTex, transparent:true, toneMapped:false }));
+  win.position.set(-0.1, 0.12, 0.752); g.add(win);
+  const markTex = new THREE.TextureLoader().load('/assets/emora-mark.svg'); markTex.colorSpace = THREE.SRGBColorSpace;
+  const mark = new THREE.Mesh(new THREE.CircleGeometry(0.22, 40), new THREE.MeshStandardMaterial({ map:markTex, transparent:true, roughness:0.6 }));
+  mark.position.set(1.05, 0.05, 0.62); mark.rotation.y = 0.5; g.add(mark);
+  const panelMat = new THREE.MeshStandardMaterial({ color:0x2c5bb0, metalness:0.6, roughness:0.35 });
+  for (const s of [-1,1]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.3, 0.04), panelMat); p.position.set(-0.75, s*1.55, -0.2); g.add(p);
+    const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.5), white); strut.position.set(-0.75, s*0.85, -0.2); g.add(strut); }
+  g.userData.flame = flame; g.userData.win = win;
+  return g;
+}
+
+const tagLayer = document.body;
+const all = [...CREW, SHIP];
+for (const c of CREW) {
+  const b = makeSatelliteBear(c.key);
+  c.rig = b;
+  if (c.key === 'robin') { const bowl = ramen(); bowl.scale.setScalar(1.6); bowl.position.set(1.7, 1.6, 0.4); b.sat.add(bowl); c.bowl = bowl; }
+  addOrbit(c, b.sat, 0.3);
+}
+addOrbit(SHIP, makeShip(), 0.5);
+for (const o of all) {
+  const el = document.createElement('div'); el.className = 'tag3d'; el.textContent = o.name; el.style.setProperty('--c', o.color);
+  el.onclick = () => focus(o.key); tagLayer.appendChild(el); o.tag = el;
+}
+
+// Crew chips
+const nav = document.getElementById('crewNav');
+for (const o of all) {
+  const b = document.createElement('button'); b.dataset.key = o.key; b.innerHTML = `<i style="--c:${o.color}"></i>${o.key === 'ship' ? '🚀 Starship' : o.name.replace('bear','')}`;
+  b.onclick = () => focus(focused === o.key ? null : o.key); nav.appendChild(b);
+}
+
+// ---------- Focus / follow ----------
+let focused = null, returning = 0;
+const card = document.getElementById('card');
+function focus(key) {
+  focused = key; returning = key ? 0 : 1.6;
+  controls.enabled = !key; controls.autoRotate = !key && !REDUCED;
+  nav.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.key === key));
+  const o = all.find(x => x.key === key);
+  if (!o) { card.classList.remove('show'); return; }
+  document.getElementById('cRole').textContent = o.role;
+  document.getElementById('cName').textContent = o.name;
+  document.getElementById('cBio').textContent = o.bio;
+  document.getElementById('cStats').innerHTML = o.stats.map(([k,v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+  card.classList.add('show');
+}
+document.getElementById('back').onclick = () => focus(null);
+document.getElementById('meet').onclick = () => focus('ed');
+addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); focus(null); } });
+
+// Click a bear in the scene
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(); let down = null;
+renderer.domElement.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!down || Math.hypot(e.clientX-down[0], e.clientY-down[1]) > 6) return;
+  ndc.set(e.clientX/innerWidth*2-1, -(e.clientY/innerHeight)*2+1); ray.setFromCamera(ndc, camera);
+  const hit = ray.intersectObjects(all.map(o => o.obj), true).find(h => h.object.userData.key);
+  if (hit) focus(hit.object.userData.key); else if (focused) focus(null);
+});
+
+// ---------- Booking modal (a joke) ----------
+const modal = document.getElementById('modal'), sheet = document.getElementById('sheet');
+const closeModal = () => modal.classList.remove('show');
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+document.getElementById('book').onclick = () => {
+  const slots = [['Tue 4 Mar 2031, 06:12 UTC', 'Cape Canaveral · 2 seats left'], ['Sat 21 Jun 2031, sunrise', 'Summer solstice · whole-family special'], ['Thu 25 Dec 2031, 09:00', 'Holiday launch · in-laws welcome (optional)']];
+  let pick = 0;
+  sheet.innerHTML = `<h3 id="mTitle">Pick a launch window</h3><p>Sessions run 90 minutes, one full orbit. Bring the whole family. Bring snacks that do not crumb.</p>
+    <div class="slots">${slots.map(([a,b],i) => `<button data-i="${i}" aria-pressed="${i===0}">${a}<small>${b}</small></button>`).join('')}</div>
+    <div class="row-end"><button class="btn ghost" id="mCancel">Not yet</button><button class="btn" id="mGo">Confirm launch</button></div>`;
+  sheet.querySelectorAll('.slots button').forEach(b => b.onclick = () => { pick = +b.dataset.i; sheet.querySelectorAll('.slots button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
+  sheet.querySelector('#mCancel').onclick = closeModal;
+  sheet.querySelector('#mGo').onclick = () => {
+    sheet.innerHTML = `<h3 id="mTitle">T-minus</h3><div id="countdown">10</div><p>Ground Control is checking that everyone has said sorry.</p>`;
+    let n = 10; const cd = sheet.querySelector('#countdown');
+    const iv = setInterval(() => { n--; cd.textContent = n > 0 ? n : '🚀';
+      if (n <= 0) { clearInterval(iv); launch(); setTimeout(() => {
+        sheet.innerHTML = `<h3 id="mTitle">You're on the waitlist</h3><p>Launch windows are booked through 2031. Ground Control will reach out when a seat opens up.</p>
+          <p>Until then, Emora does real family therapy, on the ground: <a href="https://emorahealth.com" style="color:var(--accent)" rel="noopener">emorahealth.com</a></p>
+          <div class="row-end"><button class="btn" id="mDone">Back to orbit</button></div>`;
+        sheet.querySelector('#mDone').onclick = closeModal; }, 900); } }, REDUCED ? 120 : 380);
+  };
+  modal.classList.add('show');
+};
+// Launch: Starship One gets a big burn and the crew all wave
+let boost = 0;
+function launch() { boost = 4; for (const c of CREW) c.waveUntil = clock.elapsedTime + 4; }
+
+// ---------- Layout: push Earth right on wide screens, down on phones ----------
+let shiftX = -0.16;
+function applyOffset() {
+  const w = innerWidth, h = innerHeight;
+  if (w >= 900) camera.setViewOffset(w, h, w*shiftX, 0, w, h);
+  else camera.setViewOffset(w, h, 0, -h*(focused ? 0.12 : 0.06), w, h);
+  camera.updateProjectionMatrix();
+}
+function resize() {
+  renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth/innerHeight;
+  controls.maxDistance = innerWidth < 760 ? 40 : 32;
+  applyOffset();
+}
+addEventListener('resize', resize); resize();
+const HOME_DIST = () => innerWidth < 760 ? 27 : (innerWidth < 1100 ? 21 : 18);
+camera.position.setLength(HOME_DIST());
+
+// ---------- Ticker ----------
+const orbitN = document.getElementById('orbitN'), sunriseEl = document.getElementById('sunrise');
+const t0 = Date.now();
+setInterval(() => {
+  const s = (Date.now() - t0)/1000;
+  orbitN.textContent = (1204 + Math.floor(s/90)).toLocaleString('en-US'); // one "orbit" every 90 s on this page
+  const left = 90 - (s % 90); sunriseEl.textContent = `${String(Math.floor(left/60)).padStart(2,'0')}:${String(Math.floor(left%60)).padStart(2,'0')}`;
+}, 250);
+
+// ---------- Animate ----------
+const clock = new THREE.Clock();
+const wp = new THREE.Vector3(), tmp = new THREE.Vector3(), camGoal = new THREE.Vector3(), tgtGoal = new THREE.Vector3();
+const occ = new THREE.Vector3(), occ2 = new THREE.Vector3(), basis = new THREE.Matrix4(), pq = new THREE.Quaternion();
+function occluded(p) { // is the point hidden behind the Earth from the camera?
+  const d = occ.copy(p).sub(camera.position), len = d.length(); d.divideScalar(len);
+  const oc = camera.position, b = oc.dot(d), c = oc.lengthSq() - (EARTH_R*1.02)**2, disc = b*b - c;
+  if (disc < 0) return false; const tHit = -b - Math.sqrt(disc); return tHit > 0 && tHit < len;
+}
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime, k = REDUCED ? 0.25 : 1;
+  globe.rotation.y += dt*0.035*k; clouds.rotation.y += dt*0.048*k;
+  stars.rotation.y += dt*0.002*k;
+  boost = Math.max(0, boost - dt);
+
+  for (const o of all) {
+    o.angle += dt*o.speed*k*(o === SHIP ? 1 + boost*1.5 : 1);
+    o.carrier.position.set(Math.cos(o.angle)*o.r, 0, Math.sin(o.angle)*o.r);
+    o.obj.getWorldPosition(wp);
+    if (o === SHIP) {
+      // nose along the direction of travel, window toward the camera
+      const ahead = tmp.set(Math.cos(o.angle + 0.05)*o.r, 0, Math.sin(o.angle + 0.05)*o.r); o.plane.localToWorld(ahead);
+      const X = ahead.sub(wp).normalize(), Z = occ.copy(camera.position).sub(wp).normalize();
+      Z.sub(occ2.copy(X).multiplyScalar(Z.dot(X))).normalize(); const Y = occ2.crossVectors(Z, X);
+      basis.makeBasis(X, Y, Z); o.obj.quaternion.setFromRotationMatrix(basis);
+      if (o.obj.parent) o.obj.quaternion.premultiply(pq.copy(o.obj.parent.getWorldQuaternion(pq)).invert());
+      o.obj.userData.win.rotation.z = Y.dot(occ.set(0,1,0).applyQuaternion(camera.quaternion)) < 0 ? Math.PI : 0; // keep the family right side up
+      o.obj.userData.flame.scale.set(1, 0.8 + Math.sin(t*30)*0.15 + boost*0.6, 1);
+    } else {
+      o.obj.lookAt(camera.position);
+      o.obj.rotateZ(Math.sin(t*0.6 + o.phase)*0.18); o.obj.rotateX(Math.sin(t*0.45 + o.phase*2)*0.12);
+      const R = o.rig, waving = (o.waveUntil && t < o.waveUntil) || Math.sin(t*0.5 + o.phase*3) > 0.82 || focused === o.key;
+      R.arms.forEach(({shoulder, s}) => {
+        const goal = s > 0 && waving ? 2.3 + Math.sin(t*7)*0.35 : s*(0.25 + Math.sin(t*1.3 + s + o.phase)*0.12);
+        shoulder.rotation.z += (goal - shoulder.rotation.z)*0.12;
+      });
+      R.ears.forEach(({ear, s}) => ear.rotation.z = s*(0.15 + Math.sin(t*2.2 + s + o.phase)*0.08));
+      R.wings.forEach((w, i) => w.rotation.x = Math.sin(t*0.3 + o.phase)*0.25);
+      R.blink.visible = (t*1.2 + o.phase) % 1 < 0.18;
+      if (o.bowl) { o.bowl.rotation.y += dt*0.8; o.bowl.position.y = 1.6 + Math.sin(t*1.4)*0.15; }
+    }
+    // HTML tag above the object
+    tmp.copy(wp); tmp.y += o === SHIP ? 0.55 : 0.75;
+    const hidden = occluded(wp); tmp.project(camera);
+    const x = (tmp.x*0.5+0.5)*innerWidth, y = (-tmp.y*0.5+0.5)*innerHeight;
+    o.tag.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
+    o.tag.style.opacity = hidden || tmp.z > 1 || focused ? 0 : 1;
+    o.tag.style.pointerEvents = hidden ? 'none' : 'auto';
+  }
+
+  const sx = focused ? -0.02 : -0.16;
+  if (Math.abs(sx - shiftX) > 0.001) { shiftX += (sx - shiftX)*0.06; applyOffset(); }
+  if (focused) {
+    const o = all.find(x => x.key === focused); o.obj.getWorldPosition(wp);
+    tgtGoal.copy(wp);
+    const away = (o === SHIP ? 5.2 : 3.8) * (innerWidth < 760 ? 1.35 : 1);
+    camGoal.copy(wp).normalize().multiplyScalar(wp.length() + away).add(tmp.set(0, 0.6, 0));
+    controls.target.lerp(tgtGoal, 0.08); camera.position.lerp(camGoal, 0.05);
+    camera.lookAt(controls.target);
+  } else {
+    if (returning > 0) {
+      returning -= dt; controls.target.lerp(tgtGoal.set(0,0,0), 0.06);
+      camera.position.lerp(tmp.copy(camera.position).setLength(HOME_DIST()), 0.06);
+    }
+    controls.update();
+  }
+  renderer.render(scene, camera);
+});
+</script>
+</body>
+</html>
