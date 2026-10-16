@@ -52,9 +52,9 @@ export const LOOKS = {
            grin:true, top:'shirt', topColor:0xa9cde3, plaid:['#a9cde3', '#5f8fb3'] },
   robin: { label:'Robin', hair:0x15100e, style:'curls', iris:0x3a2a1c, brow:0x15100e, grin:true, glasses:0x6f8496,
            top:'polo', topColor:0xd8231c },
-  // Nik: placeholder look until Nik confirms hair / facial hair / glasses / go-to top
-  nik:   { label:'Nik', hair:0x4a3326, style:'short', iris:0x4f6b3a, brow:0x3e2b20, stubble:0x4a3828, stubbleD:0.45,
-           grin:true, top:'sweater', topColor:0x2f5d50 },
+  // Nik: from Nik's photo (not stored): curly chestnut hair, clean-shaven, big grin, cream coat, white shirt + big white bow
+  nik:   { label:'Nik', hair:0x6e4428, style:'tousled', iris:0x5a4632, brow:0x5a3a22, grin:true,
+           top:'coat', topColor:0xd8c9ad, bow:0xfbf8f2 },
 };
 
 const sphere = (r, mat, sx=1, sy=1, sz=1) => {
@@ -130,6 +130,15 @@ export function makeBear(lookName) {
       const az = -0.6 + i*0.2;
       tuft(hairMat, headPt(az, 0.86 + Math.sin(i*2.3)*0.04, 1.0), new THREE.Vector3(Math.sin(az)*0.4, 1, 0.55), 0.1, 1.5);
     }
+  } else if (L.style === 'tousled') { // Nik: loose curls with volume on top and a fringe on the forehead
+    const rnd = (i) => Math.abs((Math.sin(i*78.233)*43758.5453) % 1);
+    for (let i=0;i<110;i++){
+      const az = -2.4 + rnd(i)*4.8, el = 0.4 + rnd(i+300)*1.15;
+      if (Math.abs(az) < 0.85 && el < 0.78) continue; // keep the face clear
+      const k = 1.03 + rnd(i+600)*0.1 + (el > 0.95 ? 0.07 : 0);
+      const c = sphere(0.09 + rnd(i+900)*0.06, hairMat); c.position.copy(headPt(az, el, k)); look.add(c);
+    }
+    for (let i=0;i<7;i++){ const c = sphere(0.1, hairMat); c.position.copy(headPt(-0.55 + i*0.18, 0.84 + (i%2)*0.05, 1.05)); look.add(c); }
   } else if (L.style === 'curls') {
     const rnd = (i) => (Math.sin(i*12.9898)*43758.5453) % 1;
     for (let i=0;i<140;i++){
@@ -188,6 +197,12 @@ export function makeBear(lookName) {
       const shape = new THREE.Shape(); shape.moveTo(0,0); shape.lineTo(0.32*s, 0.04); shape.lineTo(0.06*s, -0.3); shape.lineTo(0,0);
       const wing = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth:0.03, bevelEnabled:false }), cloth);
       wing.position.set(0.02*s, 0.98, 0.5); wing.rotation.x = -0.5; group.add(wing);
+    }
+    if (L.bow) { // big white bow at the collar, with a little gold pin
+      const bowMat = new THREE.MeshStandardMaterial({ color:L.bow, roughness:0.8 });
+      for (const s of [-1,1]) { const loop = sphere(0.16, bowMat, 1.35, 0.8, 0.45); loop.position.set(0.19*s, 0.8, 0.68); loop.rotation.z = 0.25*s; group.add(loop); }
+      const knot = sphere(0.065, bowMat, 1, 1, 0.7); knot.position.set(0, 0.8, 0.73); knot.scale.multiplyScalar(1.2); group.add(knot);
+      const pin = sphere(0.04, new THREE.MeshStandardMaterial({ color:0xd4a64a, metalness:0.9, roughness:0.3 })); pin.position.set(0, 0.8, 0.8); group.add(pin);
     }
     if (L.top === 'polo') for (const y of [0.78, 0.64]) {
       const b = sphere(0.035, new THREE.MeshStandardMaterial({ color:0xf3d9d5 }), 1, 1, 0.4); b.position.set(0, y, 0.74); group.add(b);
